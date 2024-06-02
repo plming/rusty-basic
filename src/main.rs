@@ -1,3 +1,5 @@
+mod lexer;
+
 fn main() {
     let sample_code = String::from(
         r#"
@@ -13,14 +15,10 @@ fn main() {
             LET b = c
             LET nums = nums - 1
         ENDWHILE
-    "#);
+    "#,
+    );
 
     println!("List of tokens:");
 
-    let tokens = tokenize(sample_code);
-    println!("{tokens:?}");
-}
-
-pub fn tokenize(code: String) -> Vec<String> {
-    unimplemented!();
+    let tokens = lexer::lex(&sample_code);
 }
