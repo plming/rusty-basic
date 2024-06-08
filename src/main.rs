@@ -1,7 +1,7 @@
 mod lexer;
 
 fn main() {
-    let sample_code = String::from(
+    let complex_sample_code = String::from(
         r#"
         PRINT "How many fibonacci numbers do you want?"
         INPUT nums
@@ -17,6 +17,8 @@ fn main() {
         ENDWHILE
     "#,
     );
+
+    let sample_code = String::from("PRINT 2+3");
 
     println!("List of tokens:");
 
