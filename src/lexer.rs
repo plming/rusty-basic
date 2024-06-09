@@ -1,5 +1,7 @@
 use unicode_segmentation::UnicodeSegmentation;
 
+mod tests;
+
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Keyword,
@@ -75,38 +77,6 @@ pub fn lex(code: &String) -> Vec<Token> {
 
         start = end;
     }
-
-    println!("{tokens:?}");
+    
     return tokens;
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn lex_operators_correctly() {
-        let sample_code = String::from("PRINT 2 + 5");
-        let result = lex(&sample_code);
-        let answer: Vec<Token> = vec![
-            Token {
-                kind: TokenKind::Keyword,
-                text: "PRINT".to_string(),
-            },
-            Token {
-                kind: TokenKind::Number,
-                text: "2".to_string(),
-            },
-            Token {
-                kind: TokenKind::Operator,
-                text: "+".to_string(),
-            },
-            Token {
-                kind: TokenKind::Number,
-                text: "5".to_string(),
-            },
-        ];
-
-        assert_eq!(result, answer);
-    }
 }

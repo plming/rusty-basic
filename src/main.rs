@@ -23,4 +23,6 @@ fn main() {
     println!("List of tokens:");
 
     let tokens = lexer::lex(&sample_code);
+
+    println!("{tokens:?}")
 }
