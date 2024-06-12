@@ -18,11 +18,11 @@ fn main() {
     "#,
     );
 
-    let sample_code = String::from("PRINT 2+3");
+    let sample_code ="PRINT 2+3";
 
     println!("List of tokens:");
 
     let tokens = lexer::lex(&sample_code);
 
-    println!("{tokens:?}")
+    println!("{tokens:?}");
 }

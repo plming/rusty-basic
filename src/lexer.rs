@@ -1,7 +1,5 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-mod tests;
-
 #[derive(Debug, PartialEq)]
 pub enum TokenKind {
     Keyword,
@@ -11,9 +9,9 @@ pub enum TokenKind {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Token {
+pub struct Token<'a> {
     kind: TokenKind,
-    text: String,
+    text: &'a str,
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,7 +34,7 @@ fn find_lexeme(letter: &str) -> LexemeKind {
     }
 }
 
-pub fn lex(code: &String) -> Vec<Token> {
+pub fn lex(code: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
     let letters: Vec<(usize, &str)> = code.grapheme_indices(true).collect();
 
@@ -66,17 +64,57 @@ pub fn lex(code: &String) -> Vec<Token> {
             LexemeKind::Alphabet => TokenKind::Keyword,
         };
 
-        let text: String;
+        let text: &str;
         if end == letters.len() {
-            text = code[letters[start].0..].to_string();
+            text = &code[letters[start].0..];
         } else {
-            text = code[letters[start].0..letters[end].0].to_string();
+            text = &code[letters[start].0..letters[end].0];
         }
 
         tokens.push(Token { kind, text });
 
         start = end;
     }
-    
+
     return tokens;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn simple_input() {
+        let sample_code = String::from("PRINT 2 + 5");
+        let expected: Vec<Token> = vec![
+            Token {
+                kind: TokenKind::Keyword,
+                text: "PRINT",
+            },
+            Token {
+                kind: TokenKind::Number,
+                text: "2"
+            },
+            Token {
+                kind: TokenKind::Operator,
+                text: "+"
+            },
+            Token {
+                kind: TokenKind::Number,
+                text: "5"
+            },
+        ];
+
+        let result = lex(&sample_code);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn empty_input_should_return_empty_vector() {
+        let expected: Vec<Token> = Vec::new();
+        let result = lex("");
+
+        assert_eq!(expected, result);
+    }
 }
