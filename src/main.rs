@@ -1,7 +1,8 @@
 mod lexer;
 
 fn main() {
-    let complex_sample_code = String::from(
+    
+    let complex_sample_code = 
         r#"
         PRINT "How many fibonacci numbers do you want?"
         INPUT nums
@@ -15,8 +16,7 @@ fn main() {
             LET b = c
             LET nums = nums - 1
         ENDWHILE
-    "#,
-    );
+    "#;
 
     let sample_code ="PRINT 2+3";
 

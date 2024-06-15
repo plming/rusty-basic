@@ -15,40 +15,37 @@ pub struct Token<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-enum LexemeKind {
+enum CharKind {
     Whitespace,
     Digit,
     Operator,
     Alphabet,
 }
 
-fn find_lexeme(letter: &str) -> LexemeKind {
-    if ["+", "-", "*", "/", "="].contains(&letter) {
-        return LexemeKind::Operator;
-    } else if ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].contains(&letter) {
-        return LexemeKind::Digit;
-    } else if letter.contains(char::is_whitespace) {
-        return LexemeKind::Whitespace;
-    } else {
-        return LexemeKind::Alphabet;
+fn find_lexeme(letter: &str) -> CharKind {
+    match letter {
+        "+" | "-" | "*" | "/" | "=" => CharKind::Operator,
+        "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" => CharKind::Digit,
+        _ if letter.contains(char::is_whitespace) => CharKind::Whitespace,
+        _ => CharKind::Alphabet,
     }
 }
 
 pub fn lex(code: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = Vec::new();
-    let letters: Vec<(usize, &str)> = code.grapheme_indices(true).collect();
+    let clusters: Vec<(usize, &str)> = code.grapheme_indices(true).collect();
 
     let mut start: usize = 0;
-    while start < letters.len() {
-        let start_state = find_lexeme(letters[start].1);
-        if start_state == LexemeKind::Whitespace {
+    while start < clusters.len() {
+        let start_state = find_lexeme(clusters[start].1);
+        if start_state == CharKind::Whitespace {
             start += 1;
             continue;
         }
 
         let mut end: usize = start + 1;
-        while end < letters.len() {
-            let end_state = find_lexeme(letters[end].1);
+        while end < clusters.len() {
+            let end_state = find_lexeme(clusters[end].1);
             if start_state == end_state {
                 end += 1;
                 continue;
@@ -57,19 +54,24 @@ pub fn lex(code: &str) -> Vec<Token> {
             break;
         }
 
-        let kind = match start_state {
-            LexemeKind::Whitespace => unreachable!(),
-            LexemeKind::Digit => TokenKind::Number,
-            LexemeKind::Operator => TokenKind::Operator,
-            LexemeKind::Alphabet => TokenKind::Keyword,
-        };
-
         let text: &str;
-        if end == letters.len() {
-            text = &code[letters[start].0..];
+        if end == clusters.len() {
+            text = &code[clusters[start].0..];
         } else {
-            text = &code[letters[start].0..letters[end].0];
+            text = &code[clusters[start].0..clusters[end].0];
         }
+
+        let kind = match start_state {
+            CharKind::Whitespace => unreachable!(),
+            CharKind::Digit => TokenKind::Number,
+            CharKind::Operator => TokenKind::Operator,
+            CharKind::Alphabet => {
+                match text {
+                    "PRINT" => TokenKind::Keyword,
+                    _ => TokenKind::Identifier,
+                }
+            },
+        };
 
         tokens.push(Token { kind, text });
 
@@ -85,7 +87,6 @@ mod tests {
 
     #[test]
     fn simple_input() {
-        let sample_code = String::from("PRINT 2 + 5");
         let expected: Vec<Token> = vec![
             Token {
                 kind: TokenKind::Keyword,
@@ -105,7 +106,7 @@ mod tests {
             },
         ];
 
-        let result = lex(&sample_code);
+        let result = lex("PRINT 2 + 5");
 
         assert_eq!(result, expected);
     }
