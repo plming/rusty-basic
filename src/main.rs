@@ -1,28 +1,11 @@
 mod lexer;
 
+use lexer::Lexer;
+
 fn main() {
-    
-    let complex_sample_code = 
-        r#"
-        PRINT "How many fibonacci numbers do you want?"
-        INPUT nums
-        
-        LET a = 0
-        LET b = 1
-        WHILE nums > 0 REPEAT
-            PRINT a
-            LET c = a + b
-            LET a = b
-            LET b = c
-            LET nums = nums - 1
-        ENDWHILE
-    "#;
+    let mut lexer: Lexer = Lexer::new(b"PRINT 2+3");
 
-    let sample_code ="PRINT 2+3";
-
-    println!("List of tokens:");
-
-    let tokens = lexer::lex(&sample_code);
-
-    println!("{tokens:?}");
+    while let Ok(token) = lexer.next_token() {
+        println!("{:?}", token);
+    }
 }
