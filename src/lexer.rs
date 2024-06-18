@@ -121,7 +121,21 @@ impl<'a> Lexer<'a> {
                     _ => Err(Error::InvalidIdentifier),
                 }
             }
-            Some(b'\"') => todo!(),
+            Some(b'"') => {
+                let mut literal = String::new();
+                self.read_next_char();
+
+                while let Some(ch) = self.read_next_char() {
+                    if *ch == b'"' {
+                        self.read_next_char();
+                        return Ok(Token::StringLiteral(literal));
+                    }
+
+                    literal.push(*ch as char);
+                }
+
+                Err(Error::InvalidStringLiteral)
+            }
             Some(_) => Err(Error::UnexpectedCharacter),
             None => Err(Error::UnexpectedEndOfInput),
         }
@@ -160,6 +174,20 @@ mod tests {
             Token::Then,
             Token::Goto,
             Token::NumberLiteral(10),
+        ];
+
+        for token in expected {
+            assert_eq!(lexer.next_token().unwrap(), token);
+        }
+    }
+
+    #[test]
+    fn lex_string_literal() {
+        let code = b"PRINT \"Hello, World!\"";
+        let mut lexer = Lexer::new(code);
+        let expected = vec![
+            Token::Print,
+            Token::StringLiteral("Hello, World!".to_string()),
         ];
 
         for token in expected {

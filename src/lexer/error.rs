@@ -2,5 +2,6 @@
 pub enum Error {
     UnexpectedCharacter,
     UnexpectedEndOfInput,
-    InvalidIdentifier
+    InvalidIdentifier,
+    InvalidStringLiteral,
 }
