@@ -1,10 +1,12 @@
-mod error;
-mod token;
+use crate::token::Token;
 
-pub use error::Error;
-pub use token::Token;
-
-type Result<Token> = std::result::Result<Token, Error>;
+#[derive(Debug)]
+pub enum Error {
+    UnexpectedCharacter,
+    EndOfCode,
+    InvalidIdentifier,
+    InvalidStringLiteral,
+}
 
 pub struct Lexer<'a> {
     code: &'a [u8],
@@ -16,15 +18,16 @@ impl<'a> Lexer<'a> {
         Lexer { code, position: 0 }
     }
 
-    fn peek_next_char(&self) -> Option<&u8> {
-        self.code.get(self.position)
+    fn peek_next_char(&self) -> Option<u8> {
+        self.code.get(self.position).copied()
     }
 
-    fn read_next_char(&mut self) -> Option<&u8> {
-        let next_char = self.code.get(self.position);
+    fn read_next_char(&mut self) -> Option<u8> {
+        let next_char = self.peek_next_char();
         if next_char.is_some() {
             self.position += 1;
         }
+
         next_char
     }
 
@@ -41,7 +44,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn next_token(&mut self) -> Result<Token> {
+    pub fn next_token(&mut self) -> Result<Token, Error> {
         self.skip_whitespaces();
 
         match self.peek_next_char() {
@@ -51,26 +54,30 @@ impl<'a> Lexer<'a> {
             }
             Some(b'<') => {
                 self.read_next_char();
-                if let Some(b'=') = self.peek_next_char() {
-                    self.read_next_char();
-                    Ok(Token::LessThanOrEqual)
-                } else if let Some(b'>') = self.peek_next_char() {
-                    self.read_next_char();
-                    Ok(Token::NotEqual)
-                } else {
-                    Ok(Token::LessThan)
+                match self.peek_next_char() {
+                    Some(b'=') => {
+                        self.read_next_char();
+                        Ok(Token::LessThanOrEqual)
+                    }
+                    Some(b'>') => {
+                        self.read_next_char();
+                        Ok(Token::NotEqual)
+                    }
+                    _ => Ok(Token::LessThan),
                 }
             }
             Some(b'>') => {
                 self.read_next_char();
-                if let Some(b'=') = self.peek_next_char() {
-                    self.read_next_char();
-                    Ok(Token::GreaterThanOrEqual)
-                } else if let Some(b'<') = self.peek_next_char() {
-                    self.read_next_char();
-                    Ok(Token::NotEqual)
-                } else {
-                    Ok(Token::GreaterThan)
+                match self.peek_next_char() {
+                    Some(b'=') => {
+                        self.read_next_char();
+                        Ok(Token::GreaterThanOrEqual)
+                    }
+                    Some(b'<') => {
+                        self.read_next_char();
+                        Ok(Token::NotEqual)
+                    }
+                    _ => Ok(Token::GreaterThan),
                 }
             }
             Some(b'+') => {
@@ -101,7 +108,7 @@ impl<'a> Lexer<'a> {
             Some(b'A'..=b'Z') | Some(b'a'..=b'z') => {
                 let mut identifier = String::new();
                 while let Some(ch @ b'A'..=b'Z') | Some(ch @ b'a'..=b'z') = self.peek_next_char() {
-                    identifier.push(*ch as char);
+                    identifier.push(ch as char);
                     self.read_next_char();
                 }
 
@@ -126,18 +133,18 @@ impl<'a> Lexer<'a> {
                 self.read_next_char();
 
                 while let Some(ch) = self.read_next_char() {
-                    if *ch == b'"' {
+                    if ch == b'"' {
                         self.read_next_char();
                         return Ok(Token::StringLiteral(literal));
                     }
 
-                    literal.push(*ch as char);
+                    literal.push(ch as char);
                 }
 
                 Err(Error::InvalidStringLiteral)
             }
             Some(_) => Err(Error::UnexpectedCharacter),
-            None => Err(Error::UnexpectedEndOfInput),
+            None => Err(Error::EndOfCode),
         }
     }
 }
