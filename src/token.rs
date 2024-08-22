@@ -12,6 +12,7 @@ pub enum Token {
     Divide,
     NumberLiteral(i16),
     StringLiteral(String),
+    Variable(u8),
     Print,
     If,
     Then,
@@ -24,4 +25,5 @@ pub enum Token {
     List,
     Run,
     End,
+    EndOfFile,
 }

@@ -10,6 +10,7 @@ pub enum Error {
 
 pub struct Lexer<'a> {
     code: &'a [u8],
+    /// the offset of the character not yet consumed
     position: usize,
 }
 
@@ -105,26 +106,39 @@ impl<'a> Lexer<'a> {
                 }
                 Ok(Token::NumberLiteral(number))
             }
-            Some(b'A'..=b'Z') | Some(b'a'..=b'z') => {
-                let mut identifier = String::new();
-                while let Some(ch @ b'A'..=b'Z') | Some(ch @ b'a'..=b'z') = self.peek_next_char() {
-                    identifier.push(ch as char);
+            Some(ch) if ch.is_ascii_alphabetic() => {
+                let mut identifier: Vec<u8> = Vec::new();
+
+                while let Some(ch) = self.peek_next_char() {
+                    if !ch.is_ascii_alphanumeric() {
+                        break;
+                    }
+
+                    identifier.push(ch.to_ascii_uppercase());
                     self.read_next_char();
                 }
 
-                match identifier.as_str() {
-                    "PRINT" => Ok(Token::Print),
-                    "IF" => Ok(Token::If),
-                    "THEN" => Ok(Token::Then),
-                    "GOTO" => Ok(Token::Goto),
-                    "INPUT" => Ok(Token::Input),
-                    "LET" => Ok(Token::Let),
-                    "GOSUB" => Ok(Token::Gosub),
-                    "RETURN" => Ok(Token::Return),
-                    "CLEAR" => Ok(Token::Clear),
-                    "LIST" => Ok(Token::List),
-                    "RUN" => Ok(Token::Run),
-                    "END" => Ok(Token::End),
+                debug_assert_eq!(identifier, identifier.to_ascii_uppercase());
+
+                // handle variable identifier
+                if identifier.len() == 1 && identifier[0].is_ascii_alphabetic() {
+                    let offset = identifier[0] - b'A';
+                    return Ok(Token::Variable(offset));
+                }
+
+                match identifier.as_slice() {
+                    b"PRINT" => Ok(Token::Print),
+                    b"IF" => Ok(Token::If),
+                    b"THEN" => Ok(Token::Then),
+                    b"GOTO" => Ok(Token::Goto),
+                    b"INPUT" => Ok(Token::Input),
+                    b"LET" => Ok(Token::Let),
+                    b"GOSUB" => Ok(Token::Gosub),
+                    b"RETURN" => Ok(Token::Return),
+                    b"CLEAR" => Ok(Token::Clear),
+                    b"LIST" => Ok(Token::List),
+                    b"RUN" => Ok(Token::Run),
+                    b"END" => Ok(Token::End),
                     _ => Err(Error::InvalidIdentifier),
                 }
             }
