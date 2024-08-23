@@ -126,8 +126,9 @@ impl<'a> Lexer<'a> {
 
                 // handle variable identifier
                 if identifier.len() == 1 && identifier[0].is_ascii_alphabetic() {
-                    let offset = identifier[0] - b'A';
-                    return Ok(Token::Variable(offset));
+                    return Ok(Token::Variable {
+                        identifier: identifier[0],
+                    });
                 }
 
                 match identifier.as_slice() {
