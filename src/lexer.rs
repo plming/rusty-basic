@@ -53,6 +53,18 @@ impl<'a> Lexer<'a> {
         self.skip_whitespaces();
 
         match self.peek_next_char() {
+            Some(b',') => {
+                self.read_next_char();
+                Ok(Token::Comma)
+            }
+            Some(b'(') => {
+                self.read_next_char();
+                Ok(Token::OpeningParenthesis)
+            }
+            Some(b')') => {
+                self.read_next_char();
+                Ok(Token::ClosingParenthesis)
+            }
             Some(b'=') => {
                 self.read_next_char();
                 Ok(Token::Equal)
@@ -148,7 +160,7 @@ impl<'a> Lexer<'a> {
                 }
             }
             Some(b'"') => {
-                let mut literal = String::new();
+                let mut literal: Vec<u8> = Vec::new();
                 self.read_next_char();
 
                 while let Some(ch) = self.read_next_char() {
@@ -157,7 +169,7 @@ impl<'a> Lexer<'a> {
                         return Ok(Token::StringLiteral(literal));
                     }
 
-                    literal.push(ch as char);
+                    literal.push(ch);
                 }
 
                 Err(Error::InvalidStringLiteral)
@@ -213,7 +225,7 @@ mod tests {
         let mut lexer = Lexer::new(code);
         let expected = vec![
             Token::Print,
-            Token::StringLiteral("Hello, World!".to_string()),
+            Token::StringLiteral(b"Hello, World!".to_vec()),
         ];
 
         for token in expected {

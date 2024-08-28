@@ -1,13 +1,18 @@
-mod evaluator;
+mod ast;
 mod lexer;
+mod parser;
 mod token;
 
 use lexer::Lexer;
+use parser::Parser;
 
 fn main() {
-    let mut lexer: Lexer = Lexer::new(b"PRINT 2+3");
+    let code = b"PRINT 2+3";
+    let mut lexer = Lexer::new(code);
+    let mut parser = Parser::new(lexer);
 
-    while let Ok(token) = lexer.next_token() {
-        println!("{:?}", token);
-    }
+    let program = parser.parse_program().unwrap();
+
+    println!("{:#?}", String::from_utf8_lossy(code));
+    println!("{:#?}", program);
 }

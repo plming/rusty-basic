@@ -1,5 +1,8 @@
 #[derive(Debug, PartialEq)]
 pub enum Token {
+    Comma,
+    OpeningParenthesis,
+    ClosingParenthesis,
     Equal,
     NotEqual,
     LessThan,
@@ -11,7 +14,7 @@ pub enum Token {
     Multiply,
     Divide,
     NumberLiteral(i16),
-    StringLiteral(String),
+    StringLiteral(Vec<u8>),
     Variable { identifier: u8 },
     Print,
     If,
