@@ -1,13 +1,23 @@
 #[derive(Debug)]
 pub struct Variable {
-    pub identifier: u8
+    identifier: u8,
+}
+
+impl Variable {
+    pub fn new(identifier: u8) -> Self {
+        Self { identifier }
+    }
+
+    pub fn identifier(&self) -> u8 {
+        self.identifier
+    }
 }
 
 #[derive(Debug)]
 pub enum Factor {
     Variable(Variable),
     Number(i16),
-    Expression(Box<Expression>)
+    Expression(Box<Expression>),
 }
 
 #[derive(Debug)]
@@ -51,7 +61,7 @@ pub enum Statement {
         left: Expression,
         operator: RelationalOperator,
         right: Expression,
-        then: Box<Statement>
+        then: Box<Statement>,
     },
     Goto(Expression),
     Input(VariableList),
@@ -61,7 +71,7 @@ pub enum Statement {
     Clear,
     List,
     Run,
-    End
+    End,
 }
 
 #[derive(Debug)]

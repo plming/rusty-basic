@@ -1,6 +1,5 @@
-use crate::ast;
 use crate::lexer::{Error as LexerError, Lexer};
-use crate::token;
+use crate::{ast, token};
 
 #[derive(Debug)]
 pub struct Error {
@@ -31,7 +30,7 @@ impl<'a> Parser<'a> {
 
         Err(Error {
             expected: token,
-            found: todo!()
+            found: todo!(),
         })
     }
 
@@ -58,7 +57,7 @@ impl<'a> Parser<'a> {
                 self.consume_token();
                 let expression_list = self.parse_expression_list()?;
                 ast::Statement::Print(expression_list)
-            },
+            }
             Ok(token::Token::If) => {
                 self.consume_token();
                 let left = self.parse_expression()?;
@@ -68,23 +67,30 @@ impl<'a> Parser<'a> {
                     Ok(token::Token::LessThan) => ast::RelationalOperator::LessThan,
                     Ok(token::Token::LessThanOrEqual) => ast::RelationalOperator::LessThanOrEqual,
                     Ok(token::Token::GreaterThan) => ast::RelationalOperator::GreaterThan,
-                    Ok(token::Token::GreaterThanOrEqual) => ast::RelationalOperator::GreaterThanOrEqual,
+                    Ok(token::Token::GreaterThanOrEqual) => {
+                        ast::RelationalOperator::GreaterThanOrEqual
+                    }
                     _ => Err(Error {
                         expected: todo!(),
-                        found: todo!()
+                        found: todo!(),
                     })?,
                 };
                 let right = self.parse_expression()?;
                 self.expect(token::Token::Then)?;
                 let then = Box::new(self.parse_statement()?);
-                ast::Statement::If { left, operator, right, then }
-            },
+                ast::Statement::If {
+                    left,
+                    operator,
+                    right,
+                    then,
+                }
+            }
             Ok(token::Token::Goto) => {
                 self.consume_token();
                 let expression = self.parse_expression()?;
                 ast::Statement::Goto(expression)
-            },
-            _ => todo!()
+            }
+            _ => todo!(),
         };
 
         Ok(statement)
@@ -126,12 +132,13 @@ impl<'a> Parser<'a> {
             Ok(token::Token::Plus) => {
                 self.consume_token();
                 expression.operators.push(ast::TermOperator::Add);
-            },
+            }
             Ok(token::Token::Minus) => {
                 self.consume_token();
                 expression.operators.push(ast::TermOperator::Subtract);
             }
-            _ => { // No operator, so we assume it's a positive number
+            _ => {
+                // No operator, so we assume it's a positive number
                 expression.operators.push(ast::TermOperator::Add);
             }
         }
@@ -152,7 +159,7 @@ impl<'a> Parser<'a> {
                     let term = self.parse_term()?;
                     expression.terms.push(term);
                 }
-                _ => break
+                _ => break,
             }
         }
 
@@ -181,7 +188,7 @@ impl<'a> Parser<'a> {
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
                 }
-                _ => break
+                _ => break,
             }
         }
 
@@ -192,7 +199,7 @@ impl<'a> Parser<'a> {
         match self.current_token {
             Ok(token::Token::Variable { identifier }) => {
                 self.consume_token();
-                Ok(ast::Factor::Variable(ast::Variable { identifier }))
+                Ok(ast::Factor::Variable(ast::Variable::new(identifier)))
             }
             Ok(token::Token::NumberLiteral(literal)) => {
                 self.consume_token();
