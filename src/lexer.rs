@@ -13,13 +13,14 @@ pub enum Error {
 }
 
 pub struct Lexer<'a> {
+    /// the code to lex
     code: &'a [u8],
     /// the offset of the character not yet consumed
     position: usize,
 }
 
 impl<'a> Lexer<'a> {
-    pub fn new(code: &'a [u8]) -> Self {
+    pub fn new(code: &'a [u8]) -> Lexer {
         Lexer { code, position: 0 }
     }
 
@@ -150,7 +151,7 @@ impl<'a> Lexer<'a> {
                     b"GOTO" => Ok(Token::Goto),
                     b"INPUT" => Ok(Token::Input),
                     b"LET" => Ok(Token::Let),
-                    b"GOSUB" => Ok(Token::Gosub),
+                    b"GOSUB" => Ok(Token::GoSub),
                     b"RETURN" => Ok(Token::Return),
                     b"CLEAR" => Ok(Token::Clear),
                     b"LIST" => Ok(Token::List),

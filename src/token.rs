@@ -22,7 +22,7 @@ pub enum Token {
     Goto,
     Input,
     Let,
-    Gosub,
+    GoSub,
     Return,
     Clear,
     List,
