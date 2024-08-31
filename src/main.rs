@@ -4,9 +4,9 @@ mod lexer;
 mod parser;
 mod token;
 
+use evaluator::Evaluator;
 use lexer::Lexer;
 use parser::Parser;
-use evaluator::Evaluator;
 
 fn main() {
     let code = b"PRINT 2+3";

@@ -100,8 +100,8 @@ impl<'a> Parser<'a> {
         let mut expression_list = ast::ExpressionList::new();
         loop {
             match &self.current_token {
-                Ok(token::Token::StringLiteral(s)) => {
-                    let element = ast::ExpressionListElement::String(s.to_vec());
+                Ok(token::Token::StringLiteral { value }) => {
+                    let element = ast::ExpressionListElement::String(value.to_vec());
                     expression_list.push(element);
                     self.consume_token();
                 }
@@ -201,9 +201,9 @@ impl<'a> Parser<'a> {
                 self.consume_token();
                 Ok(ast::Factor::Variable(ast::Variable::new(identifier)))
             }
-            Ok(token::Token::NumberLiteral(literal)) => {
+            Ok(token::Token::NumberLiteral { value }) => {
                 self.consume_token();
-                Ok(ast::Factor::Number(literal))
+                Ok(ast::Factor::Number(value))
             }
             _ => {
                 self.expect(token::Token::OpeningParenthesis)?;

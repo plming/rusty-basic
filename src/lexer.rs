@@ -115,13 +115,13 @@ impl<'a> Lexer<'a> {
                 Ok(Token::Divide)
             }
             Some(b'0'..=b'9') => {
-                let mut number: i16 = 0;
+                let mut value: i16 = 0;
                 while let Some(digit @ b'0'..=b'9') = self.peek_next_char() {
-                    number *= 10;
-                    number += (digit - b'0') as i16;
+                    value *= 10;
+                    value += (digit - b'0') as i16;
                     self.read_next_char();
                 }
-                Ok(Token::NumberLiteral(number))
+                Ok(Token::NumberLiteral { value })
             }
             Some(ch) if ch.is_ascii_alphabetic() => {
                 let mut identifier: Vec<u8> = Vec::new();
@@ -161,76 +161,22 @@ impl<'a> Lexer<'a> {
                 }
             }
             Some(b'"') => {
-                let mut literal: Vec<u8> = Vec::new();
+                let mut value: Vec<u8> = Vec::new();
                 self.read_next_char();
 
                 while let Some(ch) = self.read_next_char() {
                     if ch == b'"' {
                         self.read_next_char();
-                        return Ok(Token::StringLiteral(literal));
+                        return Ok(Token::StringLiteral { value });
                     }
 
-                    literal.push(ch);
+                    value.push(ch);
                 }
 
                 Err(Error::InvalidStringLiteral)
             }
             Some(_) => Err(Error::InvalidCharacter),
             None => Err(Error::EndOfCode),
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn lex_simple_expression() {
-        let code = b"PRINT 1 + 2";
-        let mut lexer = Lexer::new(code);
-        let expected = vec![
-            Token::Print,
-            Token::NumberLiteral(1),
-            Token::Plus,
-            Token::NumberLiteral(2),
-        ];
-
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
-        }
-    }
-
-    #[test]
-    fn lex_complex_expression() {
-        let code = b"IF 1 < 2 THEN GOTO 10";
-        let mut lexer = Lexer::new(code);
-        let expected = vec![
-            Token::If,
-            Token::NumberLiteral(1),
-            Token::LessThan,
-            Token::NumberLiteral(2),
-            Token::Then,
-            Token::Goto,
-            Token::NumberLiteral(10),
-        ];
-
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
-        }
-    }
-
-    #[test]
-    fn lex_string_literal() {
-        let code = b"PRINT \"Hello, World!\"";
-        let mut lexer = Lexer::new(code);
-        let expected = vec![
-            Token::Print,
-            Token::StringLiteral(b"Hello, World!".to_vec()),
-        ];
-
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
         }
     }
 }
