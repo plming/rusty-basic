@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Comma,
     OpeningParenthesis,
@@ -28,4 +28,5 @@ pub enum Token {
     List,
     Run,
     End,
+    EndOfFile,
 }

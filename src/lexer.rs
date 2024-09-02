@@ -4,8 +4,6 @@ use crate::token::Token;
 pub enum Error {
     /// Found an invalid character like b'@', b'$'
     InvalidCharacter,
-    /// Reached the end of the code
-    EndOfCode,
     /// Lexed identifier is not keyword or variable
     InvalidIdentifier,
     /// Invalid string literal like "Hello, World!
@@ -176,7 +174,7 @@ impl<'a> Lexer<'a> {
                 Err(Error::InvalidStringLiteral)
             }
             Some(_) => Err(Error::InvalidCharacter),
-            None => Err(Error::EndOfCode),
+            None => Ok(Token::EndOfFile),
         }
     }
 }

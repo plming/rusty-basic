@@ -1,46 +1,55 @@
+use crate::ast;
 use crate::lexer::{Error as LexerError, Lexer};
-use crate::{ast, token};
+use crate::token::Token;
 
 #[derive(Debug)]
-pub struct Error {
-    expected: token::Token,
-    found: token::Token,
+pub enum Error {
+    UnexpectedToken { expected: Token, found: Token },
+    LexerError(LexerError),
 }
 
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
-    current_token: Result<token::Token, LexerError>,
+    current_token: Token,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(lexer: Lexer<'a>) -> Self {
         Parser {
             lexer,
-            current_token: Err(LexerError::EndOfCode),
+            current_token: Token::EndOfFile,
         }
     }
 
-    fn expect(&mut self, token: token::Token) -> Result<(), Error> {
-        if let Ok(found) = &self.current_token {
-            if *found == token {
-                self.consume_token();
-                return Ok(());
+    fn consume_token(&mut self) -> Result<(), Error> {
+        match self.lexer.next_token() {
+            Ok(token) => {
+                self.current_token = token;
+                Ok(())
             }
+            Err(err) => Err(Error::LexerError(err)),
         }
+    }
 
-        Err(Error {
-            expected: token,
-            found: todo!(),
-        })
+    fn expect(&mut self, token: Token) -> Result<(), Error> {
+        if self.current_token == token {
+            self.consume_token()?;
+            Ok(())
+        } else {
+            Err(Error::UnexpectedToken {
+                expected: token,
+                found: self.current_token.clone(),
+            })
+        }
     }
 
     pub fn parse_program(&mut self) -> Result<Vec<ast::Statement>, Error> {
         let mut program = Vec::new();
 
         loop {
-            self.consume_token();
+            self.consume_token()?;
 
-            if let Err(LexerError::EndOfCode) = self.current_token {
+            if self.current_token == Token::EndOfFile {
                 break;
             }
 
@@ -53,30 +62,28 @@ impl<'a> Parser<'a> {
 
     fn parse_statement(&mut self) -> Result<ast::Statement, Error> {
         let statement = match self.current_token {
-            Ok(token::Token::Print) => {
-                self.consume_token();
+            Token::Print => {
+                self.consume_token()?;
                 let expression_list = self.parse_expression_list()?;
                 ast::Statement::Print(expression_list)
             }
-            Ok(token::Token::If) => {
-                self.consume_token();
+            Token::If => {
+                self.consume_token()?;
                 let left = self.parse_expression()?;
                 let operator = match self.current_token {
-                    Ok(token::Token::Equal) => ast::RelationalOperator::Equal,
-                    Ok(token::Token::NotEqual) => ast::RelationalOperator::NotEqual,
-                    Ok(token::Token::LessThan) => ast::RelationalOperator::LessThan,
-                    Ok(token::Token::LessThanOrEqual) => ast::RelationalOperator::LessThanOrEqual,
-                    Ok(token::Token::GreaterThan) => ast::RelationalOperator::GreaterThan,
-                    Ok(token::Token::GreaterThanOrEqual) => {
-                        ast::RelationalOperator::GreaterThanOrEqual
-                    }
-                    _ => Err(Error {
-                        expected: todo!(),
-                        found: todo!(),
+                    Token::Equal => ast::RelationalOperator::Equal,
+                    Token::NotEqual => ast::RelationalOperator::NotEqual,
+                    Token::LessThan => ast::RelationalOperator::LessThan,
+                    Token::LessThanOrEqual => ast::RelationalOperator::LessThanOrEqual,
+                    Token::GreaterThan => ast::RelationalOperator::GreaterThan,
+                    Token::GreaterThanOrEqual => ast::RelationalOperator::GreaterThanOrEqual,
+                    _ => Err(Error::UnexpectedToken {
+                        expected: Token::Equal,
+                        found: self.current_token.clone(),
                     })?,
                 };
                 let right = self.parse_expression()?;
-                self.expect(token::Token::Then)?;
+                self.expect(Token::Then)?;
                 let then = Box::new(self.parse_statement()?);
                 ast::Statement::If {
                     left,
@@ -85,8 +92,8 @@ impl<'a> Parser<'a> {
                     then,
                 }
             }
-            Ok(token::Token::Goto) => {
-                self.consume_token();
+            Token::Goto => {
+                self.consume_token()?;
                 let expression = self.parse_expression()?;
                 ast::Statement::Goto(expression)
             }
@@ -100,10 +107,10 @@ impl<'a> Parser<'a> {
         let mut expression_list = ast::ExpressionList::new();
         loop {
             match &self.current_token {
-                Ok(token::Token::StringLiteral { value }) => {
-                    let element = ast::ExpressionListElement::String(value.to_vec());
+                Token::StringLiteral { value } => {
+                    let element = ast::ExpressionListElement::String(value.clone());
                     expression_list.push(element);
-                    self.consume_token();
+                    self.consume_token()?;
                 }
                 _ => {
                     let expression = self.parse_expression()?;
@@ -112,8 +119,8 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            if let Ok(token::Token::Comma) = self.current_token {
-                self.consume_token();
+            if self.current_token == Token::Comma {
+                self.consume_token()?;
             } else {
                 break;
             }
@@ -129,12 +136,12 @@ impl<'a> Parser<'a> {
         };
 
         match self.current_token {
-            Ok(token::Token::Plus) => {
-                self.consume_token();
+            Token::Plus => {
+                self.consume_token()?;
                 expression.operators.push(ast::TermOperator::Add);
             }
-            Ok(token::Token::Minus) => {
-                self.consume_token();
+            Token::Minus => {
+                self.consume_token()?;
                 expression.operators.push(ast::TermOperator::Subtract);
             }
             _ => {
@@ -147,14 +154,14 @@ impl<'a> Parser<'a> {
 
         loop {
             match self.current_token {
-                Ok(token::Token::Plus) => {
-                    self.consume_token();
+                Token::Plus => {
+                    self.consume_token()?;
                     expression.operators.push(ast::TermOperator::Add);
                     let term = self.parse_term()?;
                     expression.terms.push(term);
                 }
-                Ok(token::Token::Minus) => {
-                    self.consume_token();
+                Token::Minus => {
+                    self.consume_token()?;
                     expression.operators.push(ast::TermOperator::Subtract);
                     let term = self.parse_term()?;
                     expression.terms.push(term);
@@ -176,14 +183,14 @@ impl<'a> Parser<'a> {
 
         loop {
             match self.current_token {
-                Ok(token::Token::Multiply) => {
-                    self.consume_token();
+                Token::Multiply => {
+                    self.consume_token()?;
                     term.operators.push(ast::FactorOperator::Multiply);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
                 }
-                Ok(token::Token::Divide) => {
-                    self.consume_token();
+                Token::Divide => {
+                    self.consume_token()?;
                     term.operators.push(ast::FactorOperator::Divide);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
@@ -197,24 +204,20 @@ impl<'a> Parser<'a> {
 
     fn parse_factor(&mut self) -> Result<ast::Factor, Error> {
         match self.current_token {
-            Ok(token::Token::Variable { identifier }) => {
-                self.consume_token();
+            Token::Variable { identifier } => {
+                self.consume_token()?;
                 Ok(ast::Factor::Variable(ast::Variable::new(identifier)))
             }
-            Ok(token::Token::NumberLiteral { value }) => {
-                self.consume_token();
+            Token::NumberLiteral { value } => {
+                self.consume_token()?;
                 Ok(ast::Factor::Number(value))
             }
             _ => {
-                self.expect(token::Token::OpeningParenthesis)?;
+                self.expect(Token::OpeningParenthesis)?;
                 let expression = self.parse_expression()?;
-                self.expect(token::Token::ClosingParenthesis)?;
+                self.expect(Token::ClosingParenthesis)?;
                 Ok(ast::Factor::Expression(Box::new(expression)))
             }
         }
-    }
-
-    fn consume_token(&mut self) {
-        self.current_token = self.lexer.next_token();
     }
 }
