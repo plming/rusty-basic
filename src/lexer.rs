@@ -1,6 +1,6 @@
 use crate::token::Token;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     /// Found an invalid character like b'@', b'$'
     InvalidCharacter,
@@ -178,5 +178,126 @@ impl<'a> Lexer<'a> {
             Some(_) => Err(Error::InvalidCharacter),
             None => Err(Error::EndOfCode),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn next_token_hello_world_returns_tokens() {
+        let code = b"PRINT \"Hello, World!\"";
+        let mut lexer = Lexer::new(code);
+        let expected = vec![
+            Token::Print,
+            Token::StringLiteral {
+                value: b"Hello, World!".to_vec(),
+            },
+        ];
+
+        for token in expected {
+            assert_eq!(lexer.next_token().unwrap(), token);
+        }
+    }
+
+    #[test]
+    fn next_token_expression_returns_tokens() {
+        let expression = b"1 + 2 * 3 / 4 - 5";
+        let mut lexer = Lexer::new(expression);
+        let expected = vec![
+            Token::NumberLiteral { value: 1 },
+            Token::Plus,
+            Token::NumberLiteral { value: 2 },
+            Token::Multiply,
+            Token::NumberLiteral { value: 3 },
+            Token::Divide,
+            Token::NumberLiteral { value: 4 },
+            Token::Minus,
+            Token::NumberLiteral { value: 5 },
+        ];
+
+        for token in expected {
+            assert_eq!(lexer.next_token().unwrap(), token);
+        }
+    }
+
+    #[test]
+    fn next_token_keywords_returns_tokens() {
+        let code = b"PRINT IF THEN GOTO INPUT LET GOSUB RETURN CLEAR LIST RUN END";
+        let mut lexer = Lexer::new(code);
+        let expected = vec![
+            Token::Print,
+            Token::If,
+            Token::Then,
+            Token::Goto,
+            Token::Input,
+            Token::Let,
+            Token::GoSub,
+            Token::Return,
+            Token::Clear,
+            Token::List,
+            Token::Run,
+            Token::End,
+        ];
+
+        for token in expected {
+            assert_eq!(lexer.next_token().unwrap(), token);
+        }
+    }
+
+    #[test]
+    fn next_token_variable_returns_token() {
+        let code = b"IF A < B THEN PRINT Z";
+        let mut lexer = Lexer::new(code);
+        let expected = vec![
+            Token::If,
+            Token::Variable { identifier: b'A' },
+            Token::LessThan,
+            Token::Variable { identifier: b'B' },
+            Token::Then,
+            Token::Print,
+            Token::Variable { identifier: b'Z' },
+        ];
+
+        for token in expected {
+            assert_eq!(lexer.next_token().unwrap(), token);
+        }
+    }
+
+    fn next_token_lowercase_variable_returns_token() {
+        let code = b"IF a < b THEN PRINT z";
+        let mut lexer = Lexer::new(code);
+        let expected = vec![
+            Token::If,
+            Token::Variable { identifier: b'A' },
+            Token::LessThan,
+            Token::Variable { identifier: b'B' },
+            Token::Then,
+            Token::Print,
+            Token::Variable { identifier: b'Z' },
+        ];
+
+        for token in expected {
+            assert_eq!(lexer.next_token().unwrap(), token);
+        }
+    }
+
+    #[test]
+    fn next_token_unknown_identifier_returns_error() {
+        let invalid_code = b"PRINT HELLO";
+        let mut lexer = Lexer::new(invalid_code);
+
+        assert_eq!(lexer.next_token().unwrap(), Token::Print);
+        assert_eq!(lexer.next_token(), Err(Error::InvalidIdentifier));
+    }
+
+    #[test]
+    fn next_token_non_terminated_string_returns_error() {
+        let invalid_code = b"PRINT \"Hello, World!";
+        let mut lexer = Lexer::new(invalid_code);
+
+        assert_eq!(lexer.next_token().unwrap(), Token::Print);
+        assert_eq!(lexer.next_token(), Err(Error::InvalidStringLiteral));
     }
 }
