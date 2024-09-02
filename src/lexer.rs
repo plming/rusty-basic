@@ -265,6 +265,7 @@ mod tests {
         }
     }
 
+    #[test]
     fn next_token_lowercase_variable_returns_token() {
         let code = b"IF a < b THEN PRINT z";
         let mut lexer = Lexer::new(code);
