@@ -83,3 +83,23 @@ pub enum RelationalOperator {
     GreaterThan,
     GreaterThanOrEqual,
 }
+
+pub struct Program {
+    statements: Vec<Statement>,
+}
+
+impl Program {
+    pub fn new() -> Self {
+        Self {
+            statements: Vec::new(),
+        }
+    }
+
+    pub fn statements(&self) -> &Vec<Statement> {
+        &self.statements
+    }
+
+    pub fn add_statement(&mut self, statement: Statement) {
+        self.statements.push(statement);
+    }
+}

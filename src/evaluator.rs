@@ -1,22 +1,22 @@
-use crate::ast;
+use crate::ast::{self, Program};
 
 const NUM_VARIABLES: usize = 26;
 
 pub struct Evaluator {
-    program: Vec<ast::Statement>,
+    program: Program,
     variables: [i16; NUM_VARIABLES],
 }
 
 impl Evaluator {
-    pub fn new(program: Vec<ast::Statement>) -> Self {
-        Evaluator {
+    pub fn new(program: Program) -> Self {
+        Self {
             program,
             variables: [0; NUM_VARIABLES],
         }
     }
 
     pub fn run(&self) {
-        for statement in &self.program {
+        for statement in self.program.statements() {
             match statement {
                 ast::Statement::Print(expression_list) => {
                     for element in expression_list {

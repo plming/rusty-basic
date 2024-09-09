@@ -1,4 +1,4 @@
-use crate::ast;
+use crate::ast::{self, Program};
 use crate::lexer::{Error as LexerError, Lexer};
 use crate::token::Token;
 
@@ -43,8 +43,8 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_program(&mut self) -> Result<Vec<ast::Statement>, Error> {
-        let mut program = Vec::new();
+    pub fn parse_program(&mut self) -> Result<Program, Error> {
+        let mut program = Program::new();
 
         loop {
             self.consume_token()?;
@@ -54,7 +54,7 @@ impl<'a> Parser<'a> {
             }
 
             let statement = self.parse_statement()?;
-            program.push(statement);
+            program.add_statement(statement);
         }
 
         Ok(program)
