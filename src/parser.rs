@@ -1,4 +1,4 @@
-use crate::ast::{self, Program};
+use crate::ast::{self};
 use crate::lexer::{Error as LexerError, Lexer};
 use crate::token::Token;
 
@@ -43,16 +43,11 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse_program(&mut self) -> Result<Program, Error> {
-        let mut program = Program::new();
+    pub fn parse_program(&mut self) -> Result<ast::Program, Error> {
+        let mut program = ast::Program::new();
 
-        loop {
-            self.consume_token()?;
-
-            if self.current_token == Token::EndOfFile {
-                break;
-            }
-
+        self.consume_token()?;
+        while self.current_token != Token::EndOfFile {
             let statement = self.parse_statement()?;
             program.add_statement(statement);
         }
