@@ -46,8 +46,8 @@ impl Evaluator {
             let value = self.evaluate_term(term);
 
             match operator {
-                ast::TermOperator::Add => result += value,
-                ast::TermOperator::Subtract => result -= value,
+                ast::AdditiveOperator::Addition => result += value,
+                ast::AdditiveOperator::Subtraction => result -= value,
             }
         }
 
@@ -64,8 +64,8 @@ impl Evaluator {
             let value = self.evaluate_factor(factor);
 
             match operator {
-                ast::FactorOperator::Multiply => result *= value,
-                ast::FactorOperator::Divide => result /= value,
+                ast::MultiplicativeOperator::Multiplication => result *= value,
+                ast::MultiplicativeOperator::Division => result /= value,
             }
         }
 
@@ -74,12 +74,12 @@ impl Evaluator {
 
     fn evaluate_factor(&self, factor: &ast::Factor) -> i16 {
         match factor {
-            ast::Factor::Variable(variable) => {
+            ast::Factor::Variable { variable } => {
                 let identifier = variable.identifier();
                 self.load_variable(identifier)
             }
-            ast::Factor::Number(number) => *number,
-            ast::Factor::Expression(expression) => self.evaluate_expression(&expression),
+            ast::Factor::Number { value } => *value,
+            ast::Factor::Expression { expression } => self.evaluate_expression(&expression),
         }
     }
 

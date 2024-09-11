@@ -15,33 +15,33 @@ impl Variable {
 
 #[derive(Debug)]
 pub enum Factor {
-    Variable(Variable),
-    Number(i16),
-    Expression(Box<Expression>),
+    Variable { variable: Variable },
+    Number { value: i16 },
+    Expression { expression: Box<Expression> },
 }
 
 #[derive(Debug)]
 pub struct Term {
     pub factors: Vec<Factor>,
-    pub operators: Vec<FactorOperator>,
+    pub operators: Vec<MultiplicativeOperator>,
 }
 
 #[derive(Debug)]
-pub enum FactorOperator {
-    Multiply,
-    Divide,
+pub enum MultiplicativeOperator {
+    Multiplication,
+    Division,
 }
 
 #[derive(Debug)]
 pub struct Expression {
     pub terms: Vec<Term>,
-    pub operators: Vec<TermOperator>,
+    pub operators: Vec<AdditiveOperator>,
 }
 
 #[derive(Debug)]
-pub enum TermOperator {
-    Add,
-    Subtract,
+pub enum AdditiveOperator {
+    Addition,
+    Subtraction,
 }
 
 #[derive(Debug)]

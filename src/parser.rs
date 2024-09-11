@@ -84,7 +84,7 @@ impl<'a> Parser<'a> {
                         break;
                     }
                 }
-                
+
                 ast::Statement::Print { expression_list }
             }
             Token::If => {
@@ -132,15 +132,17 @@ impl<'a> Parser<'a> {
         match self.current_token {
             Token::Plus => {
                 self.consume_token()?;
-                expression.operators.push(ast::TermOperator::Add);
+                expression.operators.push(ast::AdditiveOperator::Addition);
             }
             Token::Minus => {
                 self.consume_token()?;
-                expression.operators.push(ast::TermOperator::Subtract);
+                expression
+                    .operators
+                    .push(ast::AdditiveOperator::Subtraction);
             }
             _ => {
                 // No operator, so we assume it's a positive number
-                expression.operators.push(ast::TermOperator::Add);
+                expression.operators.push(ast::AdditiveOperator::Addition);
             }
         }
 
@@ -150,13 +152,15 @@ impl<'a> Parser<'a> {
             match self.current_token {
                 Token::Plus => {
                     self.consume_token()?;
-                    expression.operators.push(ast::TermOperator::Add);
+                    expression.operators.push(ast::AdditiveOperator::Addition);
                     let term = self.parse_term()?;
                     expression.terms.push(term);
                 }
                 Token::Minus => {
                     self.consume_token()?;
-                    expression.operators.push(ast::TermOperator::Subtract);
+                    expression
+                        .operators
+                        .push(ast::AdditiveOperator::Subtraction);
                     let term = self.parse_term()?;
                     expression.terms.push(term);
                 }
@@ -179,13 +183,14 @@ impl<'a> Parser<'a> {
             match self.current_token {
                 Token::Multiply => {
                     self.consume_token()?;
-                    term.operators.push(ast::FactorOperator::Multiply);
+                    term.operators
+                        .push(ast::MultiplicativeOperator::Multiplication);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
                 }
                 Token::Divide => {
                     self.consume_token()?;
-                    term.operators.push(ast::FactorOperator::Divide);
+                    term.operators.push(ast::MultiplicativeOperator::Division);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
                 }
@@ -200,17 +205,18 @@ impl<'a> Parser<'a> {
         match self.current_token {
             Token::Variable { identifier } => {
                 self.consume_token()?;
-                Ok(ast::Factor::Variable(ast::Variable::new(identifier)))
+                let variable = ast::Variable::new(identifier);
+                Ok(ast::Factor::Variable { variable })
             }
             Token::NumberLiteral { value } => {
                 self.consume_token()?;
-                Ok(ast::Factor::Number(value))
+                Ok(ast::Factor::Number { value })
             }
             _ => {
                 self.expect(Token::OpeningParenthesis)?;
-                let expression = self.parse_expression()?;
+                let expression = Box::new(self.parse_expression()?);
                 self.expect(Token::ClosingParenthesis)?;
-                Ok(ast::Factor::Expression(Box::new(expression)))
+                Ok(ast::Factor::Expression { expression })
             }
         }
     }
