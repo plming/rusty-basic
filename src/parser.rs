@@ -5,6 +5,7 @@ use crate::token::Token;
 #[derive(Debug)]
 pub enum Error {
     UnexpectedToken { expected: Token, found: Token },
+    VariableNotFound,
     LexerError(LexerError),
 }
 
@@ -116,6 +117,41 @@ impl<'a> Parser<'a> {
                 self.consume_token()?;
                 let expression = self.parse_expression()?;
                 ast::Statement::Goto { expression }
+            }
+            Token::Input => {
+                self.consume_token()?;
+                let mut variable_list = Vec::new();
+                loop {
+                    match self.current_token {
+                        Token::Variable { identifier } => {
+                            let variable = ast::Variable::new(identifier);
+                            variable_list.push(variable);
+                            self.consume_token()?;
+                        }
+                        _ => break,
+                    }
+
+                    if self.current_token == Token::Comma {
+                        self.consume_token()?;
+                    } else {
+                        break;
+                    }
+                }
+                ast::Statement::Input { variable_list }
+            }
+            Token::Let => {
+                self.consume_token()?;
+                let variable = match self.current_token {
+                    Token::Variable { identifier } => {
+                        let variable = ast::Variable::new(identifier);
+                        self.consume_token()?;
+                        variable
+                    }
+                    _ => Err(Error::VariableNotFound)?,
+                };
+                self.expect(Token::Equal)?;
+                let expression = self.parse_expression()?;
+                ast::Statement::Let { variable, expression }
             }
             _ => todo!(),
         };
