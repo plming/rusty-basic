@@ -44,29 +44,36 @@ pub enum TermOperator {
     Subtract,
 }
 
-pub type VariableList = Vec<Variable>;
-
 #[derive(Debug)]
 pub enum ExpressionListElement {
-    String(Vec<u8>),
-    Expression(Expression),
+    String { value: Vec<u8> },
+    Expression { expression: Expression },
 }
-
-pub type ExpressionList = Vec<ExpressionListElement>;
 
 #[derive(Debug)]
 pub enum Statement {
-    Print(ExpressionList),
+    Print {
+        expression_list: Vec<ExpressionListElement>,
+    },
     If {
         left: Expression,
         operator: RelationalOperator,
         right: Expression,
         then: Box<Statement>,
     },
-    Goto(Expression),
-    Input(VariableList),
-    Let(Variable, Expression),
-    GoSub(Expression),
+    Goto {
+        expression: Expression,
+    },
+    Input {
+        variable_list: Vec<Variable>,
+    },
+    Let {
+        variable: Variable,
+        expression: Expression,
+    },
+    GoSub {
+        expression: Expression,
+    },
     Return,
     Clear,
     List,

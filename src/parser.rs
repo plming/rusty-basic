@@ -1,4 +1,4 @@
-use crate::ast::{self};
+use crate::ast;
 use crate::lexer::{Error as LexerError, Lexer};
 use crate::token::Token;
 
@@ -15,7 +15,7 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(lexer: Lexer<'a>) -> Self {
-        Parser {
+        Self {
             lexer,
             current_token: Token::EndOfFile,
         }
@@ -59,8 +59,33 @@ impl<'a> Parser<'a> {
         let statement = match self.current_token {
             Token::Print => {
                 self.consume_token()?;
-                let expression_list = self.parse_expression_list()?;
-                ast::Statement::Print(expression_list)
+
+                let mut expression_list = Vec::new();
+
+                loop {
+                    match &self.current_token {
+                        Token::StringLiteral { value } => {
+                            let element = ast::ExpressionListElement::String {
+                                value: value.to_vec(),
+                            };
+                            expression_list.push(element);
+                            self.consume_token()?;
+                        }
+                        _ => {
+                            let expression = self.parse_expression()?;
+                            let element = ast::ExpressionListElement::Expression { expression };
+                            expression_list.push(element);
+                        }
+                    }
+
+                    if self.current_token == Token::Comma {
+                        self.consume_token()?;
+                    } else {
+                        break;
+                    }
+                }
+                
+                ast::Statement::Print { expression_list }
             }
             Token::If => {
                 self.consume_token()?;
@@ -90,38 +115,12 @@ impl<'a> Parser<'a> {
             Token::Goto => {
                 self.consume_token()?;
                 let expression = self.parse_expression()?;
-                ast::Statement::Goto(expression)
+                ast::Statement::Goto { expression }
             }
             _ => todo!(),
         };
 
         Ok(statement)
-    }
-
-    fn parse_expression_list(&mut self) -> Result<ast::ExpressionList, Error> {
-        let mut expression_list = ast::ExpressionList::new();
-        loop {
-            match &self.current_token {
-                Token::StringLiteral { value } => {
-                    let element = ast::ExpressionListElement::String(value.clone());
-                    expression_list.push(element);
-                    self.consume_token()?;
-                }
-                _ => {
-                    let expression = self.parse_expression()?;
-                    let element = ast::ExpressionListElement::Expression(expression);
-                    expression_list.push(element);
-                }
-            }
-
-            if self.current_token == Token::Comma {
-                self.consume_token()?;
-            } else {
-                break;
-            }
-        }
-
-        Ok(expression_list)
     }
 
     fn parse_expression(&mut self) -> Result<ast::Expression, Error> {
