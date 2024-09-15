@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::token::Token;
 
 #[derive(Debug, PartialEq)]
@@ -48,7 +50,21 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn next_token(&mut self) -> Result<Token, Error> {
+    pub fn lex(&mut self) -> Result<VecDeque<Token>, Error> {
+        let mut tokens = VecDeque::new();
+
+        loop {
+            let token = self.next_token()?;
+            match token {
+                Token::EndOfFile => break,
+                _ => tokens.push_back(token)
+            }
+        }
+
+        Ok(tokens)
+    }
+
+    fn next_token(&mut self) -> Result<Token, Error> {
         self.skip_whitespaces();
 
         match self.peek_next_char() {
@@ -194,9 +210,7 @@ mod tests {
             },
         ];
 
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
-        }
+        assert_eq!(lexer.lex().unwrap(), expected);
     }
 
     #[test]

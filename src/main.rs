@@ -10,8 +10,10 @@ use parser::Parser;
 
 fn main() {
     let code = b"PRINT 2+3";
-    let lexer = Lexer::new(code);
-    let mut parser = Parser::new(lexer);
+
+    let mut lexer = Lexer::new(code);
+    let tokens = lexer.lex().unwrap();
+    let mut parser = Parser::new(tokens);
 
     let program = parser.parse_program().unwrap();
 

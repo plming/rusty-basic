@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::ast;
 use crate::lexer::{Error as LexerError, Lexer};
 use crate::token::Token;
@@ -9,26 +11,26 @@ pub enum Error {
     LexerError(LexerError),
 }
 
-pub struct Parser<'a> {
-    lexer: Lexer<'a>,
+pub struct Parser {
+    tokens: VecDeque<Token>,
     current_token: Token,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(lexer: Lexer<'a>) -> Self {
+impl Parser {
+    pub fn new(tokens: VecDeque<Token>) -> Self {
         Self {
-            lexer,
+            tokens,
             current_token: Token::EndOfFile,
         }
     }
 
     fn consume_token(&mut self) -> Result<(), Error> {
-        match self.lexer.next_token() {
-            Ok(token) => {
+        match self.tokens.pop_front() {
+            Some(token) => {
                 self.current_token = token;
                 Ok(())
             }
-            Err(err) => Err(Error::LexerError(err)),
+            None => Ok(()),
         }
     }
 
@@ -257,3 +259,4 @@ impl<'a> Parser<'a> {
         }
     }
 }
+
