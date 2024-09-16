@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, vec};
 
 use crate::token::Token;
 
@@ -55,9 +55,10 @@ impl<'a> Lexer<'a> {
 
         loop {
             let token = self.next_token()?;
+
             match token {
                 Token::EndOfFile => break,
-                _ => tokens.push_back(token)
+                _ => tokens.push_back(token),
             }
         }
 
@@ -67,69 +68,40 @@ impl<'a> Lexer<'a> {
     fn next_token(&mut self) -> Result<Token, Error> {
         self.skip_whitespaces();
 
-        match self.peek_next_char() {
-            Some(b',') => {
-                self.read_next_char();
-                Ok(Token::Comma)
-            }
-            Some(b'(') => {
-                self.read_next_char();
-                Ok(Token::OpeningParenthesis)
-            }
-            Some(b')') => {
-                self.read_next_char();
-                Ok(Token::ClosingParenthesis)
-            }
-            Some(b'=') => {
-                self.read_next_char();
-                Ok(Token::Equal)
-            }
-            Some(b'<') => {
-                self.read_next_char();
-                match self.peek_next_char() {
-                    Some(b'=') => {
-                        self.read_next_char();
-                        Ok(Token::LessThanOrEqual)
-                    }
-                    Some(b'>') => {
-                        self.read_next_char();
-                        Ok(Token::NotEqual)
-                    }
-                    _ => Ok(Token::LessThan),
+        let current_char = self.read_next_char();
+        match current_char {
+            Some(b',') => Ok(Token::Comma),
+            Some(b'(') => Ok(Token::OpeningParenthesis),
+            Some(b')') => Ok(Token::ClosingParenthesis),
+            Some(b'=') => Ok(Token::Equal),
+            Some(b'<') => match self.peek_next_char() {
+                Some(b'=') => {
+                    self.read_next_char();
+                    Ok(Token::LessThanOrEqual)
                 }
-            }
-            Some(b'>') => {
-                self.read_next_char();
-                match self.peek_next_char() {
-                    Some(b'=') => {
-                        self.read_next_char();
-                        Ok(Token::GreaterThanOrEqual)
-                    }
-                    Some(b'<') => {
-                        self.read_next_char();
-                        Ok(Token::NotEqual)
-                    }
-                    _ => Ok(Token::GreaterThan),
+                Some(b'>') => {
+                    self.read_next_char();
+                    Ok(Token::NotEqual)
                 }
-            }
-            Some(b'+') => {
-                self.read_next_char();
-                Ok(Token::Plus)
-            }
-            Some(b'-') => {
-                self.read_next_char();
-                Ok(Token::Minus)
-            }
-            Some(b'*') => {
-                self.read_next_char();
-                Ok(Token::Multiply)
-            }
-            Some(b'/') => {
-                self.read_next_char();
-                Ok(Token::Divide)
-            }
-            Some(b'0'..=b'9') => {
-                let mut value: i16 = 0;
+                _ => Ok(Token::LessThan),
+            },
+            Some(b'>') => match self.peek_next_char() {
+                Some(b'=') => {
+                    self.read_next_char();
+                    Ok(Token::GreaterThanOrEqual)
+                }
+                Some(b'<') => {
+                    self.read_next_char();
+                    Ok(Token::NotEqual)
+                }
+                _ => Ok(Token::GreaterThan),
+            },
+            Some(b'+') => Ok(Token::Plus),
+            Some(b'-') => Ok(Token::Minus),
+            Some(b'*') => Ok(Token::Multiply),
+            Some(b'/') => Ok(Token::Divide),
+            Some(digit) if digit.is_ascii_digit() => {
+                let mut value: i16 = (digit - b'0') as i16;
                 while let Some(digit @ b'0'..=b'9') = self.peek_next_char() {
                     value *= 10;
                     value += (digit - b'0') as i16;
@@ -138,7 +110,7 @@ impl<'a> Lexer<'a> {
                 Ok(Token::NumberLiteral { value })
             }
             Some(ch) if ch.is_ascii_alphabetic() => {
-                let mut identifier: Vec<u8> = Vec::new();
+                let mut identifier: Vec<u8> = vec![ch.to_ascii_uppercase()];
 
                 while let Some(ch) = self.peek_next_char() {
                     if !ch.is_ascii_alphanumeric() {
@@ -176,7 +148,6 @@ impl<'a> Lexer<'a> {
             }
             Some(b'"') => {
                 let mut value: Vec<u8> = Vec::new();
-                self.read_next_char();
 
                 while let Some(ch) = self.read_next_char() {
                     if ch == b'"' {
@@ -200,24 +171,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn next_token_hello_world_returns_tokens() {
+    fn lex_hello_world_returns_tokens() {
         let code = b"PRINT \"Hello, World!\"";
         let mut lexer = Lexer::new(code);
-        let expected = vec![
+        let expected = VecDeque::from([
             Token::Print,
             Token::StringLiteral {
                 value: b"Hello, World!".to_vec(),
             },
-        ];
+        ]);
 
-        assert_eq!(lexer.lex().unwrap(), expected);
+        assert_eq!(lexer.lex(), Ok(expected));
     }
 
     #[test]
-    fn next_token_expression_returns_tokens() {
+    fn lex_expression_returns_tokens() {
         let expression = b"1 + 2 * 3 / 4 - 5";
         let mut lexer = Lexer::new(expression);
-        let expected = vec![
+        let expected = VecDeque::from([
             Token::NumberLiteral { value: 1 },
             Token::Plus,
             Token::NumberLiteral { value: 2 },
@@ -227,18 +198,16 @@ mod tests {
             Token::NumberLiteral { value: 4 },
             Token::Minus,
             Token::NumberLiteral { value: 5 },
-        ];
+        ]);
 
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
-        }
+        assert_eq!(lexer.lex(), Ok(expected));
     }
 
     #[test]
-    fn next_token_keywords_returns_tokens() {
+    fn lex_keywords_returns_tokens() {
         let code = b"PRINT IF THEN GOTO INPUT LET GOSUB RETURN CLEAR LIST RUN END";
         let mut lexer = Lexer::new(code);
-        let expected = vec![
+        let expected = VecDeque::from([
             Token::Print,
             Token::If,
             Token::Then,
@@ -251,18 +220,16 @@ mod tests {
             Token::List,
             Token::Run,
             Token::End,
-        ];
+        ]);
 
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
-        }
+        assert_eq!(lexer.lex(), Ok(expected));
     }
 
     #[test]
-    fn next_token_variable_returns_token() {
+    fn lex_variable_returns_token() {
         let code = b"IF A < B THEN PRINT Z";
         let mut lexer = Lexer::new(code);
-        let expected = vec![
+        let expected = VecDeque::from([
             Token::If,
             Token::Variable { identifier: b'A' },
             Token::LessThan,
@@ -270,18 +237,16 @@ mod tests {
             Token::Then,
             Token::Print,
             Token::Variable { identifier: b'Z' },
-        ];
+        ]);
 
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
-        }
+        assert_eq!(lexer.lex(), Ok(expected));
     }
 
     #[test]
-    fn next_token_lowercase_variable_returns_token() {
+    fn lex_lowercase_variable_returns_uppercase_token() {
         let code = b"IF a < b THEN PRINT z";
         let mut lexer = Lexer::new(code);
-        let expected = vec![
+        let expected = VecDeque::from([
             Token::If,
             Token::Variable { identifier: b'A' },
             Token::LessThan,
@@ -289,28 +254,24 @@ mod tests {
             Token::Then,
             Token::Print,
             Token::Variable { identifier: b'Z' },
-        ];
+        ]);
 
-        for token in expected {
-            assert_eq!(lexer.next_token().unwrap(), token);
-        }
+        assert_eq!(lexer.lex(), Ok(expected));
     }
 
     #[test]
-    fn next_token_unknown_identifier_returns_error() {
+    fn lex_unknown_identifier_returns_error() {
         let invalid_code = b"PRINT HELLO";
         let mut lexer = Lexer::new(invalid_code);
 
-        assert_eq!(lexer.next_token().unwrap(), Token::Print);
-        assert_eq!(lexer.next_token(), Err(Error::InvalidIdentifier));
+        assert_eq!(lexer.lex(), Err(Error::InvalidIdentifier));
     }
 
     #[test]
-    fn next_token_non_terminated_string_returns_error() {
+    fn lex_non_terminated_string_returns_error() {
         let invalid_code = b"PRINT \"Hello, World!";
         let mut lexer = Lexer::new(invalid_code);
 
-        assert_eq!(lexer.next_token().unwrap(), Token::Print);
-        assert_eq!(lexer.next_token(), Err(Error::InvalidStringLiteral));
+        assert_eq!(lexer.lex(), Err(Error::InvalidStringLiteral));
     }
 }

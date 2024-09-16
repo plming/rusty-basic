@@ -153,7 +153,10 @@ impl Parser {
                 };
                 self.expect(Token::Equal)?;
                 let expression = self.parse_expression()?;
-                ast::Statement::Let { variable, expression }
+                ast::Statement::Let {
+                    variable,
+                    expression,
+                }
             }
             _ => todo!(),
         };
@@ -259,4 +262,3 @@ impl Parser {
         }
     }
 }
-

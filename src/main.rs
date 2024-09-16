@@ -12,9 +12,11 @@ fn main() {
     let code = b"PRINT 2+3";
 
     let mut lexer = Lexer::new(code);
-    let tokens = lexer.lex().unwrap();
-    let mut parser = Parser::new(tokens);
+    let tokens = lexer.lex().unwrap_or_else(|error| {
+        panic!("Lexer error: {error:?}");
+    });
 
+    let mut parser = Parser::new(tokens);
     let program = parser.parse_program().unwrap();
 
     let evaluator = Evaluator::new(program);
