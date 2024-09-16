@@ -7,48 +7,43 @@ use crate::token::Token;
 pub enum Error {
     UnexpectedToken { expected: Token, found: Token },
     VariableNotFound,
+    NoMoreToken,
+    RelationalOperatorNotFound,
+    KeywordNotFound,
 }
 
 pub struct Parser {
     tokens: VecDeque<Token>,
-    current_token: Token,
 }
 
 impl Parser {
     pub fn new(tokens: VecDeque<Token>) -> Self {
-        Self {
-            tokens,
-            current_token: Token::EndOfFile,
-        }
+        Self { tokens }
     }
 
-    fn consume_token(&mut self) -> Result<(), Error> {
-        match self.tokens.pop_front() {
-            Some(token) => {
-                self.current_token = token;
-                Ok(())
-            }
-            None => Ok(()),
-        }
+    fn consume_token(&mut self) -> Option<Token> {
+        self.tokens.pop_front()
     }
 
-    fn expect(&mut self, token: Token) -> Result<(), Error> {
-        if self.current_token == token {
-            self.consume_token()?;
-            Ok(())
-        } else {
-            Err(Error::UnexpectedToken {
-                expected: token,
-                found: self.current_token.clone(),
-            })
+    fn peek_token(&self) -> Option<&Token> {
+        self.tokens.front()
+    }
+
+    fn expect(&mut self, expected: Token) -> Result<(), Error> {
+        match self.consume_token() {
+            Some(token) if token == expected => Ok(()),
+            Some(token) => Err(Error::UnexpectedToken {
+                expected,
+                found: token,
+            }),
+            None => Err(Error::NoMoreToken),
         }
     }
 
     pub fn parse_program(&mut self) -> Result<ast::Program, Error> {
         let mut program = ast::Program::new();
 
-        self.consume_token()?;
-        while self.current_token != Token::EndOfFile {
+        while !self.tokens.is_empty() {
             let statement = self.parse_statement()?;
             program.add_statement(statement);
         }
@@ -57,20 +52,17 @@ impl Parser {
     }
 
     fn parse_statement(&mut self) -> Result<ast::Statement, Error> {
-        let statement = match self.current_token {
-            Token::Print => {
-                self.consume_token()?;
-
+        let statement = match self.consume_token() {
+            Some(Token::Print) => {
                 let mut expression_list = Vec::new();
 
                 loop {
-                    match &self.current_token {
-                        Token::StringLiteral { value } => {
+                    match self.consume_token() {
+                        Some(Token::StringLiteral { value }) => {
                             let element = ast::ExpressionListElement::String {
                                 value: value.to_vec(),
                             };
                             expression_list.push(element);
-                            self.consume_token()?;
                         }
                         _ => {
                             let expression = self.parse_expression()?;
@@ -79,8 +71,8 @@ impl Parser {
                         }
                     }
 
-                    if self.current_token == Token::Comma {
-                        self.consume_token()?;
+                    if let Some(Token::Comma) = self.peek_token() {
+                        self.consume_token();
                     } else {
                         break;
                     }
@@ -88,20 +80,16 @@ impl Parser {
 
                 ast::Statement::Print { expression_list }
             }
-            Token::If => {
-                self.consume_token()?;
+            Some(Token::If) => {
                 let left = self.parse_expression()?;
-                let operator = match self.current_token {
-                    Token::Equal => ast::RelationalOperator::Equal,
-                    Token::NotEqual => ast::RelationalOperator::NotEqual,
-                    Token::LessThan => ast::RelationalOperator::LessThan,
-                    Token::LessThanOrEqual => ast::RelationalOperator::LessThanOrEqual,
-                    Token::GreaterThan => ast::RelationalOperator::GreaterThan,
-                    Token::GreaterThanOrEqual => ast::RelationalOperator::GreaterThanOrEqual,
-                    _ => Err(Error::UnexpectedToken {
-                        expected: Token::Equal,
-                        found: self.current_token.clone(),
-                    })?,
+                let operator = match self.consume_token() {
+                    Some(Token::Equal) => ast::RelationalOperator::Equal,
+                    Some(Token::NotEqual) => ast::RelationalOperator::NotEqual,
+                    Some(Token::LessThan) => ast::RelationalOperator::LessThan,
+                    Some(Token::LessThanOrEqual) => ast::RelationalOperator::LessThanOrEqual,
+                    Some(Token::GreaterThan) => ast::RelationalOperator::GreaterThan,
+                    Some(Token::GreaterThanOrEqual) => ast::RelationalOperator::GreaterThanOrEqual,
+                    _ => Err(Error::RelationalOperatorNotFound)?,
                 };
                 let right = self.parse_expression()?;
                 self.expect(Token::Then)?;
@@ -113,40 +101,32 @@ impl Parser {
                     then,
                 }
             }
-            Token::Goto => {
-                self.consume_token()?;
+            Some(Token::Goto) => {
                 let expression = self.parse_expression()?;
                 ast::Statement::Goto { expression }
             }
-            Token::Input => {
-                self.consume_token()?;
+            Some(Token::Input) => {
                 let mut variable_list = Vec::new();
                 loop {
-                    match self.current_token {
-                        Token::Variable { identifier } => {
+                    match self.consume_token() {
+                        Some(Token::Variable { identifier }) => {
                             let variable = ast::Variable::new(identifier);
                             variable_list.push(variable);
-                            self.consume_token()?;
                         }
                         _ => break,
                     }
 
-                    if self.current_token == Token::Comma {
-                        self.consume_token()?;
+                    if let Some(Token::Comma) = self.peek_token() {
+                        self.consume_token();
                     } else {
                         break;
                     }
                 }
                 ast::Statement::Input { variable_list }
             }
-            Token::Let => {
-                self.consume_token()?;
-                let variable = match self.current_token {
-                    Token::Variable { identifier } => {
-                        let variable = ast::Variable::new(identifier);
-                        self.consume_token()?;
-                        variable
-                    }
+            Some(Token::Let) => {
+                let variable = match self.consume_token() {
+                    Some(Token::Variable { identifier }) => ast::Variable::new(identifier),
                     _ => Err(Error::VariableNotFound)?,
                 };
                 self.expect(Token::Equal)?;
@@ -156,7 +136,17 @@ impl Parser {
                     expression,
                 }
             }
-            _ => todo!(),
+            Some(Token::GoSub) => {
+                let expression = self.parse_expression()?;
+                ast::Statement::GoSub { expression }
+            }
+            Some(Token::Return) => ast::Statement::Return,
+            Some(Token::Clear) => ast::Statement::Clear,
+            Some(Token::List) => ast::Statement::List,
+            Some(Token::Run) => ast::Statement::Run,
+            Some(Token::End) => ast::Statement::End,
+            None => Err(Error::NoMoreToken)?,
+            _ => Err(Error::KeywordNotFound)?,
         };
 
         Ok(statement)
@@ -168,13 +158,11 @@ impl Parser {
             operators: Vec::new(),
         };
 
-        match self.current_token {
-            Token::Plus => {
-                self.consume_token()?;
+        match self.consume_token() {
+            Some(Token::Plus) => {
                 expression.operators.push(ast::AdditiveOperator::Addition);
             }
-            Token::Minus => {
-                self.consume_token()?;
+            Some(Token::Minus) => {
                 expression
                     .operators
                     .push(ast::AdditiveOperator::Subtraction);
@@ -185,18 +173,17 @@ impl Parser {
             }
         }
 
-        expression.terms.push(self.parse_term()?);
+        let term = self.parse_term()?;
+        expression.terms.push(term);
 
         loop {
-            match self.current_token {
-                Token::Plus => {
-                    self.consume_token()?;
+            match self.consume_token() {
+                Some(Token::Plus) => {
                     expression.operators.push(ast::AdditiveOperator::Addition);
                     let term = self.parse_term()?;
                     expression.terms.push(term);
                 }
-                Token::Minus => {
-                    self.consume_token()?;
+                Some(Token::Minus) => {
                     expression
                         .operators
                         .push(ast::AdditiveOperator::Subtraction);
@@ -219,16 +206,14 @@ impl Parser {
         term.factors.push(self.parse_factor()?);
 
         loop {
-            match self.current_token {
-                Token::Multiply => {
-                    self.consume_token()?;
+            match self.consume_token() {
+                Some(Token::Multiply) => {
                     term.operators
                         .push(ast::MultiplicativeOperator::Multiplication);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
                 }
-                Token::Divide => {
-                    self.consume_token()?;
+                Some(Token::Divide) => {
                     term.operators.push(ast::MultiplicativeOperator::Division);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
@@ -241,16 +226,12 @@ impl Parser {
     }
 
     fn parse_factor(&mut self) -> Result<ast::Factor, Error> {
-        match self.current_token {
-            Token::Variable { identifier } => {
-                self.consume_token()?;
+        match self.consume_token() {
+            Some(Token::Variable { identifier }) => {
                 let variable = ast::Variable::new(identifier);
                 Ok(ast::Factor::Variable { variable })
             }
-            Token::NumberLiteral { value } => {
-                self.consume_token()?;
-                Ok(ast::Factor::Number { value })
-            }
+            Some(Token::NumberLiteral { value }) => Ok(ast::Factor::Number { value }),
             _ => {
                 self.expect(Token::OpeningParenthesis)?;
                 let expression = Box::new(self.parse_expression()?);
