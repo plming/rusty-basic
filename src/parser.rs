@@ -1,14 +1,12 @@
 use std::collections::VecDeque;
 
 use crate::ast;
-use crate::lexer::{Error as LexerError, Lexer};
 use crate::token::Token;
 
 #[derive(Debug)]
 pub enum Error {
     UnexpectedToken { expected: Token, found: Token },
     VariableNotFound,
-    LexerError(LexerError),
 }
 
 pub struct Parser {
