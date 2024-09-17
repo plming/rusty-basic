@@ -3,7 +3,7 @@ use std::collections::VecDeque;
 use crate::ast;
 use crate::token::Token;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     UnexpectedToken { expected: Token, found: Token },
     VariableNotFound,
@@ -41,14 +41,14 @@ impl Parser {
     }
 
     pub fn parse_program(&mut self) -> Result<ast::Program, Error> {
-        let mut program = ast::Program::new();
+        let mut statements = Vec::new();
 
         while !self.tokens.is_empty() {
             let statement = self.parse_statement()?;
-            program.add_statement(statement);
+            statements.push(statement);
         }
 
-        Ok(program)
+        Ok(ast::Program::new(statements))
     }
 
     fn parse_statement(&mut self) -> Result<ast::Statement, Error> {
@@ -229,15 +229,42 @@ impl Parser {
         match self.consume_token() {
             Some(Token::Variable { identifier }) => {
                 let variable = ast::Variable::new(identifier);
-                Ok(ast::Factor::Variable { variable })
+                Ok(ast::Factor::Variable(variable))
             }
-            Some(Token::NumberLiteral { value }) => Ok(ast::Factor::Number { value }),
+            Some(Token::NumberLiteral { value }) => {
+                Ok(ast::Factor::NumberLiteral(ast::NumberLiteral::new(value)))
+            }
             _ => {
                 self.expect(Token::OpeningParenthesis)?;
                 let expression = Box::new(self.parse_expression()?);
                 self.expect(Token::ClosingParenthesis)?;
-                Ok(ast::Factor::Expression { expression })
+                Ok(ast::Factor::Expression(expression))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_hello_world_returns_ast() {
+        let tokens = VecDeque::from([
+            Token::Print,
+            Token::StringLiteral {
+                value: b"Hello, World!".to_vec(),
+            },
+        ]);
+        let mut parser = Parser::new(tokens);
+        let expected = ast::Program::new(vec![ast::Statement::Print {
+            expression_list: vec![ast::ExpressionListElement::String {
+                value: b"Hello, World!".to_vec(),
+            }],
+        }]);
+
+        let actual = parser.parse_program();
+
+        assert_eq!(Ok(expected), actual);
     }
 }

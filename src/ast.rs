@@ -1,10 +1,11 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Variable {
     identifier: u8,
 }
 
 impl Variable {
     pub fn new(identifier: u8) -> Self {
+        debug_assert!(identifier.is_ascii_uppercase());
         Self { identifier }
     }
 
@@ -13,44 +14,59 @@ impl Variable {
     }
 }
 
-#[derive(Debug)]
-pub enum Factor {
-    Variable { variable: Variable },
-    Number { value: i16 },
-    Expression { expression: Box<Expression> },
+#[derive(Debug, PartialEq)]
+pub struct NumberLiteral {
+    value: i16,
 }
 
-#[derive(Debug)]
+impl NumberLiteral {
+    pub fn new(value: i16) -> Self {
+        Self { value }
+    }
+
+    pub fn value(&self) -> i16 {
+        self.value
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Factor {
+    Variable(Variable),
+    NumberLiteral(NumberLiteral),
+    Expression(Box<Expression>),
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Term {
     pub factors: Vec<Factor>,
     pub operators: Vec<MultiplicativeOperator>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MultiplicativeOperator {
     Multiplication,
     Division,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Expression {
     pub terms: Vec<Term>,
     pub operators: Vec<AdditiveOperator>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum AdditiveOperator {
     Addition,
     Subtraction,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ExpressionListElement {
     String { value: Vec<u8> },
     Expression { expression: Expression },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     Print {
         expression_list: Vec<ExpressionListElement>,
@@ -81,7 +97,7 @@ pub enum Statement {
     End,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RelationalOperator {
     Equal,
     NotEqual,
@@ -91,22 +107,17 @@ pub enum RelationalOperator {
     GreaterThanOrEqual,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Program {
     statements: Vec<Statement>,
 }
 
 impl Program {
-    pub fn new() -> Self {
-        Self {
-            statements: Vec::new(),
-        }
+    pub fn new(statements: Vec<Statement>) -> Self {
+        Self { statements }
     }
 
-    pub fn statements(&self) -> &Vec<Statement> {
+    pub fn statements(&self) -> &[Statement] {
         &self.statements
-    }
-
-    pub fn add_statement(&mut self, statement: Statement) {
-        self.statements.push(statement);
     }
 }

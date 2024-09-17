@@ -53,116 +53,112 @@ impl<'a> Lexer<'a> {
     pub fn lex(&mut self) -> Result<VecDeque<Token>, Error> {
         let mut tokens = VecDeque::new();
 
-        loop {
-            let token = self.next_token()?;
+        while let Some(ch) = self.read_next_char() {
+            let token = match ch {
+                b',' => Token::Comma,
+                b'(' => Token::OpeningParenthesis,
+                b')' => Token::ClosingParenthesis,
+                b'=' => Token::Equal,
+                b'<' => match self.peek_next_char() {
+                    Some(b'=') => {
+                        self.read_next_char();
+                        Token::LessThanOrEqual
+                    }
+                    Some(b'>') => {
+                        self.read_next_char();
+                        Token::NotEqual
+                    }
+                    _ => Token::LessThan,
+                },
+                b'>' => match self.peek_next_char() {
+                    Some(b'=') => {
+                        self.read_next_char();
+                        Token::GreaterThanOrEqual
+                    }
+                    Some(b'<') => {
+                        self.read_next_char();
+                        Token::NotEqual
+                    }
+                    _ => Token::GreaterThan,
+                },
+                b'+' => Token::Plus,
+                b'-' => Token::Minus,
+                b'*' => Token::Multiply,
+                b'/' => Token::Divide,
+                digit @ b'0'..=b'9' => {
+                    let mut value: i16 = (digit - b'0') as i16;
+                    while let Some(digit @ b'0'..=b'9') = self.peek_next_char() {
+                        value *= 10;
+                        value += (digit - b'0') as i16;
+                        self.read_next_char();
+                    }
+                    Token::NumberLiteral { value }
+                }
+                ch if ch.is_ascii_alphabetic() => {
+                    let mut identifier: Vec<u8> = vec![ch.to_ascii_uppercase()];
 
-            match token {
-                Token::EndOfFile => break,
-                _ => tokens.push_back(token),
-            }
+                    while let Some(ch) = self.peek_next_char() {
+                        if !ch.is_ascii_alphanumeric() {
+                            break;
+                        }
+
+                        identifier.push(ch.to_ascii_uppercase());
+                        self.read_next_char();
+                    }
+
+                    debug_assert_eq!(identifier, identifier.to_ascii_uppercase());
+
+                    // handle variable identifier
+                    if identifier.len() == 1 && identifier[0].is_ascii_alphabetic() {
+                        Token::Variable {
+                            identifier: identifier[0],
+                        }
+                    } else {
+                        match identifier.as_slice() {
+                            b"PRINT" => Token::Print,
+                            b"IF" => Token::If,
+                            b"THEN" => Token::Then,
+                            b"GOTO" => Token::Goto,
+                            b"INPUT" => Token::Input,
+                            b"LET" => Token::Let,
+                            b"GOSUB" => Token::GoSub,
+                            b"RETURN" => Token::Return,
+                            b"CLEAR" => Token::Clear,
+                            b"LIST" => Token::List,
+                            b"RUN" => Token::Run,
+                            b"END" => Token::End,
+                            _ => return Err(Error::InvalidIdentifier),
+                        }
+                    }
+                }
+                b'"' => {
+                    let mut value: Vec<u8> = Vec::new();
+                    let mut is_terminated = false;
+
+                    while let Some(ch) = self.read_next_char() {
+                        if ch == b'"' {
+                            self.read_next_char();
+                            is_terminated = true;
+                            break;
+                        }
+
+                        value.push(ch);
+                    }
+
+                    if is_terminated {
+                        Token::StringLiteral { value }
+                    } else {
+                        return Err(Error::InvalidStringLiteral);
+                    }
+                }
+                _ if ch.is_ascii_whitespace() => continue,
+                _ => return Err(Error::InvalidCharacter),
+            };
+
+            tokens.push_back(token);
         }
 
         Ok(tokens)
-    }
-
-    fn next_token(&mut self) -> Result<Token, Error> {
-        self.skip_whitespaces();
-
-        let current_char = self.read_next_char();
-        match current_char {
-            Some(b',') => Ok(Token::Comma),
-            Some(b'(') => Ok(Token::OpeningParenthesis),
-            Some(b')') => Ok(Token::ClosingParenthesis),
-            Some(b'=') => Ok(Token::Equal),
-            Some(b'<') => match self.peek_next_char() {
-                Some(b'=') => {
-                    self.read_next_char();
-                    Ok(Token::LessThanOrEqual)
-                }
-                Some(b'>') => {
-                    self.read_next_char();
-                    Ok(Token::NotEqual)
-                }
-                _ => Ok(Token::LessThan),
-            },
-            Some(b'>') => match self.peek_next_char() {
-                Some(b'=') => {
-                    self.read_next_char();
-                    Ok(Token::GreaterThanOrEqual)
-                }
-                Some(b'<') => {
-                    self.read_next_char();
-                    Ok(Token::NotEqual)
-                }
-                _ => Ok(Token::GreaterThan),
-            },
-            Some(b'+') => Ok(Token::Plus),
-            Some(b'-') => Ok(Token::Minus),
-            Some(b'*') => Ok(Token::Multiply),
-            Some(b'/') => Ok(Token::Divide),
-            Some(digit) if digit.is_ascii_digit() => {
-                let mut value: i16 = (digit - b'0') as i16;
-                while let Some(digit @ b'0'..=b'9') = self.peek_next_char() {
-                    value *= 10;
-                    value += (digit - b'0') as i16;
-                    self.read_next_char();
-                }
-                Ok(Token::NumberLiteral { value })
-            }
-            Some(ch) if ch.is_ascii_alphabetic() => {
-                let mut identifier: Vec<u8> = vec![ch.to_ascii_uppercase()];
-
-                while let Some(ch) = self.peek_next_char() {
-                    if !ch.is_ascii_alphanumeric() {
-                        break;
-                    }
-
-                    identifier.push(ch.to_ascii_uppercase());
-                    self.read_next_char();
-                }
-
-                debug_assert_eq!(identifier, identifier.to_ascii_uppercase());
-
-                // handle variable identifier
-                if identifier.len() == 1 && identifier[0].is_ascii_alphabetic() {
-                    return Ok(Token::Variable {
-                        identifier: identifier[0],
-                    });
-                }
-
-                match identifier.as_slice() {
-                    b"PRINT" => Ok(Token::Print),
-                    b"IF" => Ok(Token::If),
-                    b"THEN" => Ok(Token::Then),
-                    b"GOTO" => Ok(Token::Goto),
-                    b"INPUT" => Ok(Token::Input),
-                    b"LET" => Ok(Token::Let),
-                    b"GOSUB" => Ok(Token::GoSub),
-                    b"RETURN" => Ok(Token::Return),
-                    b"CLEAR" => Ok(Token::Clear),
-                    b"LIST" => Ok(Token::List),
-                    b"RUN" => Ok(Token::Run),
-                    b"END" => Ok(Token::End),
-                    _ => Err(Error::InvalidIdentifier),
-                }
-            }
-            Some(b'"') => {
-                let mut value: Vec<u8> = Vec::new();
-
-                while let Some(ch) = self.read_next_char() {
-                    if ch == b'"' {
-                        self.read_next_char();
-                        return Ok(Token::StringLiteral { value });
-                    }
-
-                    value.push(ch);
-                }
-
-                Err(Error::InvalidStringLiteral)
-            }
-            Some(_) => Err(Error::InvalidCharacter),
-            None => Ok(Token::EndOfFile),
-        }
     }
 }
 

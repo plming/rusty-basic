@@ -15,7 +15,7 @@ impl Evaluator {
         }
     }
 
-    pub fn run(&self) {
+    pub fn run(&mut self) {
         for statement in self.program.statements() {
             match statement {
                 ast::Statement::Print { expression_list } => {
@@ -74,12 +74,12 @@ impl Evaluator {
 
     fn evaluate_factor(&self, factor: &ast::Factor) -> i16 {
         match factor {
-            ast::Factor::Variable { variable } => {
+            ast::Factor::Variable(variable) => {
                 let identifier = variable.identifier();
                 self.load_variable(identifier)
             }
-            ast::Factor::Number { value } => *value,
-            ast::Factor::Expression { expression } => self.evaluate_expression(&expression),
+            ast::Factor::NumberLiteral(number) => number.value(),
+            ast::Factor::Expression(expression) => self.evaluate_expression(expression),
         }
     }
 
