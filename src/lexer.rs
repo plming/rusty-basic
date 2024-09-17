@@ -37,19 +37,6 @@ impl<'a> Lexer<'a> {
         next_char
     }
 
-    fn skip_whitespaces(&mut self) {
-        loop {
-            if let Some(ch) = self.peek_next_char() {
-                if ch.is_ascii_whitespace() {
-                    self.read_next_char();
-                    continue;
-                }
-            }
-
-            break;
-        }
-    }
-
     pub fn lex(&mut self) -> Result<VecDeque<Token>, Error> {
         let mut tokens = VecDeque::new();
 

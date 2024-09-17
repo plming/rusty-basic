@@ -28,5 +28,4 @@ pub enum Token {
     List,
     Run,
     End,
-    EndOfFile,
 }
