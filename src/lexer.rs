@@ -82,7 +82,7 @@ impl<'a> Lexer<'a> {
                     Token::NumberLiteral { value }
                 }
                 ch if ch.is_ascii_alphabetic() => {
-                    let mut identifier: Vec<u8> = vec![ch.to_ascii_uppercase()];
+                    let mut identifier = vec![ch.to_ascii_uppercase()];
 
                     while let Some(ch) = self.peek_next_char() {
                         if !ch.is_ascii_alphanumeric() {
@@ -96,7 +96,7 @@ impl<'a> Lexer<'a> {
                     debug_assert_eq!(identifier, identifier.to_ascii_uppercase());
 
                     // handle variable identifier
-                    if identifier.len() == 1 && identifier[0].is_ascii_alphabetic() {
+                    if identifier.len() == 1 {
                         Token::Variable {
                             identifier: identifier[0],
                         }
@@ -120,19 +120,18 @@ impl<'a> Lexer<'a> {
                 }
                 b'"' => {
                     let mut value: Vec<u8> = Vec::new();
-                    let mut is_terminated = false;
+                    let mut is_string_terminated = false;
 
                     while let Some(ch) = self.read_next_char() {
                         if ch == b'"' {
-                            self.read_next_char();
-                            is_terminated = true;
+                            is_string_terminated = true;
                             break;
                         }
 
                         value.push(ch);
                     }
 
-                    if is_terminated {
+                    if is_string_terminated {
                         Token::StringLiteral { value }
                     } else {
                         return Err(Error::InvalidStringLiteral);
@@ -256,5 +255,21 @@ mod tests {
         let mut lexer = Lexer::new(invalid_code);
 
         assert_eq!(lexer.lex(), Err(Error::InvalidStringLiteral));
+    }
+
+    #[test]
+    fn lex_empty_string_literal_returns_tokens() {
+        let code = br#"PRINT "", """#;
+        let mut lexer = Lexer::new(code);
+        let expected = VecDeque::from([
+            Token::Print,
+            Token::StringLiteral { value: Vec::new() },
+            Token::Comma,
+            Token::StringLiteral { value: Vec::new() },
+        ]);
+
+        let actual = lexer.lex();
+        
+        assert_eq!(Ok(expected), actual);
     }
 }
