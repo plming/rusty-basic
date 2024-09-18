@@ -3,20 +3,19 @@ use crate::ast::{self, Program};
 const NUM_VARIABLES: usize = 26;
 
 pub struct Evaluator {
-    program: Program,
     variables: [i16; NUM_VARIABLES],
 }
 
 impl Evaluator {
-    pub fn new(program: Program) -> Self {
+    pub fn new() -> Self {
         Self {
-            program,
             variables: [0; NUM_VARIABLES],
         }
     }
 
-    pub fn run(&mut self) {
-        for statement in self.program.statements() {
+    pub fn run(&mut self, program: Program) {
+        let statements = program.statements();
+        for statement in statements {
             match statement {
                 ast::Statement::Print { expression_list } => {
                     for element in expression_list {
@@ -31,7 +30,14 @@ impl Evaluator {
                         }
                     }
                 }
-                _ => todo!(),
+                ast::Statement::Let {
+                    variable,
+                    expression,
+                } => {
+                    let value = self.evaluate_expression(expression);
+                    self.store_variable(variable.identifier(), value);
+                }
+                _ => todo!("{statement:?}"),
             }
         }
     }
@@ -67,7 +73,7 @@ impl Evaluator {
             let operator = &operators[i - 1];
             let factor = &factors[i];
 
-            let value = self.evaluate_factor(&factor);
+            let value = self.evaluate_factor(factor);
 
             match operator {
                 ast::MultiplicativeOperator::Multiplication => result *= value,
@@ -92,5 +98,10 @@ impl Evaluator {
     fn load_variable(&self, identifier: u8) -> i16 {
         let offset = (identifier - b'A') as usize;
         self.variables[offset]
+    }
+
+    fn store_variable(&mut self, identifier: u8, value: i16) {
+        let offset = (identifier - b'A') as usize;
+        self.variables[offset] = value;
     }
 }

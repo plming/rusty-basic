@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Variable {
     identifier: u8,
 }
@@ -14,7 +14,7 @@ impl Variable {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct NumberLiteral {
     value: i16,
 }
@@ -29,7 +29,7 @@ impl NumberLiteral {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct StringLiteral {
     value: Vec<u8>,
 }
@@ -44,14 +44,14 @@ impl StringLiteral {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Factor {
     Variable(Variable),
     NumberLiteral(NumberLiteral),
     Expression(Box<Expression>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Term {
     factors: Vec<Factor>,
     operators: Vec<MultiplicativeOperator>,
@@ -89,13 +89,13 @@ impl Term {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum MultiplicativeOperator {
     Multiplication,
     Division,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Expression {
     terms: Vec<Term>,
     operators: Vec<AdditiveOperator>,
@@ -142,19 +142,19 @@ impl Expression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AdditiveOperator {
     Addition,
     Subtraction,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ExpressionListElement {
     StringLiteral(StringLiteral),
     Expression(Expression),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Print {
         expression_list: Vec<ExpressionListElement>,
@@ -185,7 +185,7 @@ pub enum Statement {
     End,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RelationalOperator {
     Equal,
     NotEqual,
@@ -195,7 +195,7 @@ pub enum RelationalOperator {
     GreaterThanOrEqual,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Program {
     statements: Vec<Statement>,
 }

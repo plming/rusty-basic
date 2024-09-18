@@ -4,23 +4,44 @@ mod lexer;
 mod parser;
 mod token;
 
+use std::io::Write;
+
 use evaluator::Evaluator;
 use lexer::Lexer;
 use parser::Parser;
 
 fn main() {
-    let code = b"PRINT 2+3";
+    let mut buffer = String::new();
+    let mut evaluator = Evaluator::new();
 
-    let mut lexer = Lexer::new(code);
-    let tokens = lexer.lex().unwrap_or_else(|error| {
-        panic!("Lexer error: {error:?}");
-    });
+    loop {
+        // Print a prompt
+        print!("> ");
+        std::io::stdout().flush().unwrap();
 
-    let mut parser = Parser::new(tokens);
-    let program = parser.parse_program().unwrap_or_else(|error| {
-        panic!("Parser error: {error:?}");
-    });
+        // Read a line from the user
+        buffer.clear();
+        std::io::stdin().read_line(&mut buffer).unwrap();
 
-    let mut evaluator = Evaluator::new(program);
-    evaluator.run();
+        let code = buffer.as_bytes();
+        let mut lexer = Lexer::new(code);
+        let tokens = match lexer.lex() {
+            Ok(tokens) => tokens,
+            Err(error) => {
+                eprintln!("Lexer error: {error:?}");
+                continue;
+            }
+        };
+
+        let mut parser = Parser::new(tokens);
+        let program = match parser.parse_program() {
+            Ok(program) => program,
+            Err(error) => {
+                eprintln!("Parser error: {error:?}");
+                continue;
+            }
+        };
+
+        evaluator.run(program);
+    }
 }
