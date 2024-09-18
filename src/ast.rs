@@ -53,8 +53,40 @@ pub enum Factor {
 
 #[derive(Debug, PartialEq)]
 pub struct Term {
-    pub factors: Vec<Factor>,
-    pub operators: Vec<MultiplicativeOperator>,
+    factors: Vec<Factor>,
+    operators: Vec<MultiplicativeOperator>,
+}
+
+impl Term {
+    pub fn new(factor: Factor) -> Self {
+        Self {
+            factors: vec![factor],
+            operators: Vec::new(),
+        }
+    }
+
+    pub fn multiply_by(&mut self, factor: Factor) {
+        self.push_factor(MultiplicativeOperator::Multiplication, factor);
+    }
+
+    pub fn divide_by(&mut self, factor: Factor) {
+        self.push_factor(MultiplicativeOperator::Division, factor);
+    }
+
+    pub fn factors(&self) -> &[Factor] {
+        &self.factors
+    }
+
+    pub fn operators(&self) -> &[MultiplicativeOperator] {
+        &self.operators
+    }
+
+    fn push_factor(&mut self, operator: MultiplicativeOperator, factor: Factor) {
+        self.factors.push(factor);
+        self.operators.push(operator);
+
+        debug_assert!(self.factors.len() == self.operators.len() + 1);
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -65,8 +97,49 @@ pub enum MultiplicativeOperator {
 
 #[derive(Debug, PartialEq)]
 pub struct Expression {
-    pub terms: Vec<Term>,
-    pub operators: Vec<AdditiveOperator>,
+    terms: Vec<Term>,
+    operators: Vec<AdditiveOperator>,
+}
+
+impl Expression {
+    pub fn new(unary_operator: Option<AdditiveOperator>, term: Term) -> Self {
+        let mut expression = Self {
+            terms: vec![term],
+            operators: Vec::new(),
+        };
+
+        if let Some(operator) = unary_operator {
+            expression.operators.push(operator);
+        } else {
+            // No operator, so we assume it's a positive number
+            expression.operators.push(AdditiveOperator::Addition);
+        }
+
+        expression
+    }
+
+    pub fn add(&mut self, term: Term) {
+        self.push_term(AdditiveOperator::Addition, term);
+    }
+
+    pub fn subtract(&mut self, term: Term) {
+        self.push_term(AdditiveOperator::Subtraction, term);
+    }
+
+    pub fn terms(&self) -> &[Term] {
+        &self.terms
+    }
+
+    pub fn operators(&self) -> &[AdditiveOperator] {
+        &self.operators
+    }
+
+    fn push_term(&mut self, operator: AdditiveOperator, term: Term) {
+        self.terms.push(term);
+        self.operators.push(operator);
+
+        debug_assert!(self.terms.len() == self.operators.len());
+    }
 }
 
 #[derive(Debug, PartialEq)]

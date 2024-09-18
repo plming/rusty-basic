@@ -37,11 +37,14 @@ impl Evaluator {
     }
 
     fn evaluate_expression(&self, expression: &ast::Expression) -> i16 {
+        let terms = expression.terms();
+        let operators = expression.operators();
+
         let mut result = 0;
 
-        for i in 0..expression.terms.len() {
-            let operator = &expression.operators[i];
-            let term = &expression.terms[i];
+        for i in 0..terms.len() {
+            let operator = &operators[i];
+            let term = &terms[i];
 
             let value = self.evaluate_term(term);
 
@@ -55,13 +58,16 @@ impl Evaluator {
     }
 
     fn evaluate_term(&self, term: &ast::Term) -> i16 {
-        let mut result = self.evaluate_factor(&term.factors[0]);
+        let factors = term.factors();
+        let operators = term.operators();
 
-        for i in 1..term.factors.len() {
-            let operator = &term.operators[i - 1];
-            let factor = &term.factors[i];
+        let mut result = self.evaluate_factor(&factors[0]);
 
-            let value = self.evaluate_factor(factor);
+        for i in 1..factors.len() {
+            let operator = &operators[i - 1];
+            let factor = &factors[i];
+
+            let value = self.evaluate_factor(&factor);
 
             match operator {
                 ast::MultiplicativeOperator::Multiplication => result *= value,
