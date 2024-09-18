@@ -21,10 +21,10 @@ impl Evaluator {
                 ast::Statement::Print { expression_list } => {
                     for element in expression_list {
                         match element {
-                            ast::ExpressionListElement::String { value } => {
-                                println!("{}", String::from_utf8_lossy(value));
+                            ast::ExpressionListElement::StringLiteral(string_literal) => {
+                                println!("{}", String::from_utf8_lossy(string_literal.value()));
                             }
-                            ast::ExpressionListElement::Expression { expression } => {
+                            ast::ExpressionListElement::Expression(expression) => {
                                 let result = self.evaluate_expression(expression);
                                 println!("{}", result);
                             }

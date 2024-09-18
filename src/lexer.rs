@@ -269,7 +269,7 @@ mod tests {
         ]);
 
         let actual = lexer.lex();
-        
+
         assert_eq!(Ok(expected), actual);
     }
 }

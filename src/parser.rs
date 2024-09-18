@@ -25,17 +25,22 @@ impl Parser {
         self.tokens.pop_front()
     }
 
-    fn peek_token(&self) -> Option<&Token> {
-        self.tokens.front()
+    fn peek_token(&self) -> Option<Token> {
+        self.tokens.front().cloned()
     }
 
     fn expect(&mut self, expected: Token) -> Result<(), Error> {
         match self.consume_token() {
-            Some(token) if token == expected => Ok(()),
-            Some(token) => Err(Error::UnexpectedToken {
-                expected,
-                found: token,
-            }),
+            Some(token) => {
+                if token == expected {
+                    Ok(())
+                } else {
+                    Err(Error::UnexpectedToken {
+                        expected,
+                        found: token,
+                    })
+                }
+            }
             None => Err(Error::NoMoreToken),
         }
     }
@@ -57,16 +62,17 @@ impl Parser {
                 let mut expression_list = Vec::new();
 
                 loop {
-                    match self.consume_token() {
+                    match self.peek_token() {
                         Some(Token::StringLiteral { value }) => {
-                            let element = ast::ExpressionListElement::String {
-                                value: value.to_vec(),
-                            };
+                            self.consume_token();
+                            let element = ast::ExpressionListElement::StringLiteral(
+                                ast::StringLiteral::new(value),
+                            );
                             expression_list.push(element);
                         }
                         _ => {
                             let expression = self.parse_expression()?;
-                            let element = ast::ExpressionListElement::Expression { expression };
+                            let element = ast::ExpressionListElement::Expression(expression);
                             expression_list.push(element);
                         }
                     }
@@ -113,7 +119,7 @@ impl Parser {
                             let variable = ast::Variable::new(identifier);
                             variable_list.push(variable);
                         }
-                        _ => break,
+                        _ => Err(Error::VariableNotFound)?,
                     }
 
                     if let Some(Token::Comma) = self.peek_token() {
@@ -158,11 +164,13 @@ impl Parser {
             operators: Vec::new(),
         };
 
-        match self.consume_token() {
+        match self.peek_token() {
             Some(Token::Plus) => {
+                self.consume_token();
                 expression.operators.push(ast::AdditiveOperator::Addition);
             }
             Some(Token::Minus) => {
+                self.consume_token();
                 expression
                     .operators
                     .push(ast::AdditiveOperator::Subtraction);
@@ -177,13 +185,15 @@ impl Parser {
         expression.terms.push(term);
 
         loop {
-            match self.consume_token() {
+            match self.peek_token() {
                 Some(Token::Plus) => {
+                    self.consume_token();
                     expression.operators.push(ast::AdditiveOperator::Addition);
                     let term = self.parse_term()?;
                     expression.terms.push(term);
                 }
                 Some(Token::Minus) => {
+                    self.consume_token();
                     expression
                         .operators
                         .push(ast::AdditiveOperator::Subtraction);
@@ -206,14 +216,16 @@ impl Parser {
         term.factors.push(self.parse_factor()?);
 
         loop {
-            match self.consume_token() {
+            match self.peek_token() {
                 Some(Token::Multiply) => {
+                    self.consume_token();
                     term.operators
                         .push(ast::MultiplicativeOperator::Multiplication);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
                 }
                 Some(Token::Divide) => {
+                    self.consume_token();
                     term.operators.push(ast::MultiplicativeOperator::Division);
                     let factor = self.parse_factor()?;
                     term.factors.push(factor);
@@ -226,12 +238,14 @@ impl Parser {
     }
 
     fn parse_factor(&mut self) -> Result<ast::Factor, Error> {
-        match self.consume_token() {
+        match self.peek_token() {
             Some(Token::Variable { identifier }) => {
+                self.consume_token();
                 let variable = ast::Variable::new(identifier);
                 Ok(ast::Factor::Variable(variable))
             }
             Some(Token::NumberLiteral { value }) => {
+                self.consume_token();
                 Ok(ast::Factor::NumberLiteral(ast::NumberLiteral::new(value)))
             }
             _ => {
@@ -258,10 +272,43 @@ mod tests {
         ]);
         let mut parser = Parser::new(tokens);
         let expected = ast::Program::new(vec![ast::Statement::Print {
-            expression_list: vec![ast::ExpressionListElement::String {
-                value: b"Hello, World!".to_vec(),
-            }],
+            expression_list: vec![ast::ExpressionListElement::StringLiteral(
+                ast::StringLiteral::new(b"Hello, World!".to_vec()),
+            )],
         }]);
+
+        let actual = parser.parse_program();
+
+        assert_eq!(Ok(expected), actual);
+    }
+
+    #[test]
+    fn parse_print_expression_returns_ast() {
+        let tokens = VecDeque::from([
+            Token::Print,
+            Token::NumberLiteral { value: 2 },
+            Token::Plus,
+            Token::NumberLiteral { value: 3 },
+        ]);
+        let expected = ast::Program::new(vec![ast::Statement::Print {
+            expression_list: vec![ast::ExpressionListElement::Expression(ast::Expression {
+                terms: vec![
+                    ast::Term {
+                        factors: vec![ast::Factor::NumberLiteral(ast::NumberLiteral::new(2))],
+                        operators: vec![],
+                    },
+                    ast::Term {
+                        factors: vec![ast::Factor::NumberLiteral(ast::NumberLiteral::new(3))],
+                        operators: vec![],
+                    },
+                ],
+                operators: vec![
+                    ast::AdditiveOperator::Addition,
+                    ast::AdditiveOperator::Addition,
+                ],
+            })],
+        }]);
+        let mut parser = Parser::new(tokens);
 
         let actual = parser.parse_program();
 

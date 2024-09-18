@@ -30,6 +30,21 @@ impl NumberLiteral {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct StringLiteral {
+    value: Vec<u8>,
+}
+
+impl StringLiteral {
+    pub fn new(value: Vec<u8>) -> Self {
+        Self { value }
+    }
+
+    pub fn value(&self) -> &Vec<u8> {
+        &self.value
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Factor {
     Variable(Variable),
     NumberLiteral(NumberLiteral),
@@ -62,8 +77,8 @@ pub enum AdditiveOperator {
 
 #[derive(Debug, PartialEq)]
 pub enum ExpressionListElement {
-    String { value: Vec<u8> },
-    Expression { expression: Expression },
+    StringLiteral(StringLiteral),
+    Expression(Expression),
 }
 
 #[derive(Debug, PartialEq)]

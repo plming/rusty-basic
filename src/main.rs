@@ -17,7 +17,9 @@ fn main() {
     });
 
     let mut parser = Parser::new(tokens);
-    let program = parser.parse_program().unwrap();
+    let program = parser.parse_program().unwrap_or_else(|error| {
+        panic!("Parser error: {error:?}");
+    });
 
     let mut evaluator = Evaluator::new(program);
     evaluator.run();
