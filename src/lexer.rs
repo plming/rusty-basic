@@ -7,9 +7,9 @@ pub enum Error {
     /// Found an invalid character like b'@', b'$'
     InvalidCharacter,
     /// Lexed identifier is not keyword or variable
-    InvalidIdentifier,
-    /// Invalid string literal like "Hello, World!
-    InvalidStringLiteral,
+    UnknownIdentifier,
+    /// Non terminated string literal like "Hello, World!
+    NonTerminatedStringLiteral,
 }
 
 pub struct Lexer<'a> {
@@ -114,7 +114,7 @@ impl<'a> Lexer<'a> {
                             b"LIST" => Token::List,
                             b"RUN" => Token::Run,
                             b"END" => Token::End,
-                            _ => return Err(Error::InvalidIdentifier),
+                            _ => return Err(Error::UnknownIdentifier),
                         }
                     }
                 }
@@ -134,7 +134,7 @@ impl<'a> Lexer<'a> {
                     if is_string_terminated {
                         Token::StringLiteral { value }
                     } else {
-                        return Err(Error::InvalidStringLiteral);
+                        return Err(Error::NonTerminatedStringLiteral);
                     }
                 }
                 _ if ch.is_ascii_whitespace() => continue,
@@ -246,7 +246,7 @@ mod tests {
         let invalid_code = b"PRINT HELLO";
         let mut lexer = Lexer::new(invalid_code);
 
-        assert_eq!(lexer.lex(), Err(Error::InvalidIdentifier));
+        assert_eq!(lexer.lex(), Err(Error::UnknownIdentifier));
     }
 
     #[test]
@@ -254,7 +254,7 @@ mod tests {
         let invalid_code = b"PRINT \"Hello, World!";
         let mut lexer = Lexer::new(invalid_code);
 
-        assert_eq!(lexer.lex(), Err(Error::InvalidStringLiteral));
+        assert_eq!(lexer.lex(), Err(Error::NonTerminatedStringLiteral));
     }
 
     #[test]
