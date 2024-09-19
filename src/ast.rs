@@ -196,16 +196,36 @@ pub enum RelationalOperator {
 }
 
 #[derive(Debug, PartialEq, Clone)]
+pub struct Line {
+    number: i16,
+    statement: Statement,
+}
+
+impl Line {
+    pub fn new(number: i16, statement: Statement) -> Self {
+        Self { number, statement }
+    }
+
+    pub fn number(&self) -> i16 {
+        self.number
+    }
+
+    pub fn statement(&self) -> &Statement {
+        &self.statement
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
 pub struct Program {
-    statements: Vec<Statement>,
+    lines: Vec<Line>,
 }
 
 impl Program {
-    pub fn new(statements: Vec<Statement>) -> Self {
-        Self { statements }
+    pub fn new(lines: Vec<Line>) -> Self {
+        Self { lines }
     }
 
-    pub fn statements(&self) -> &[Statement] {
-        &self.statements
+    pub fn lines(&self) -> &[Line] {
+        &self.lines
     }
 }

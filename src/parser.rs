@@ -10,6 +10,7 @@ pub enum Error {
     NoMoreToken,
     RelationalOperatorNotFound,
     KeywordNotFound,
+    LineNumberNotFound,
 }
 
 pub struct Parser {
@@ -46,14 +47,25 @@ impl Parser {
     }
 
     pub fn parse_program(&mut self) -> Result<ast::Program, Error> {
-        let mut statements = Vec::new();
+        let mut lines = Vec::new();
 
         while !self.tokens.is_empty() {
-            let statement = self.parse_statement()?;
-            statements.push(statement);
+            let line = self.parse_line()?;
+            lines.push(line);
         }
 
-        Ok(ast::Program::new(statements))
+        Ok(ast::Program::new(lines))
+    }
+
+    fn parse_line(&mut self) -> Result<ast::Line, Error> {
+        let line_number = match self.consume_token() {
+            Some(Token::NumberLiteral { value }) => value,
+            _ => Err(Error::LineNumberNotFound)?,
+        };
+
+        let statement = self.parse_statement()?;
+
+        Ok(ast::Line::new(line_number, statement))
     }
 
     fn parse_statement(&mut self) -> Result<ast::Statement, Error> {
@@ -250,13 +262,13 @@ mod tests {
             },
         ]);
         let mut parser = Parser::new(tokens);
-        let expected = ast::Program::new(vec![ast::Statement::Print {
+        let expected = ast::Statement::Print {
             expression_list: vec![ast::ExpressionListElement::StringLiteral(
                 ast::StringLiteral::new(b"Hello, World!".to_vec()),
             )],
-        }]);
+        };
 
-        let actual = parser.parse_program();
+        let actual = parser.parse_statement();
 
         assert_eq!(Ok(expected), actual);
     }

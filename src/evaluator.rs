@@ -14,31 +14,35 @@ impl Evaluator {
     }
 
     pub fn run(&mut self, program: Program) {
-        let statements = program.statements();
-        for statement in statements {
-            match statement {
-                ast::Statement::Print { expression_list } => {
-                    for element in expression_list {
-                        match element {
-                            ast::ExpressionListElement::StringLiteral(string_literal) => {
-                                println!("{}", String::from_utf8_lossy(string_literal.value()));
-                            }
-                            ast::ExpressionListElement::Expression(expression) => {
-                                let result = self.evaluate_expression(expression);
-                                println!("{}", result);
-                            }
+        let lines = program.lines();
+        for line in lines {
+            self.run_by_line(line);
+        }
+    }
+
+    pub fn run_by_line(&mut self, line: &ast::Line) {
+        match line.statement() {
+            ast::Statement::Print { expression_list } => {
+                for element in expression_list {
+                    match element {
+                        ast::ExpressionListElement::StringLiteral(string_literal) => {
+                            println!("{}", String::from_utf8_lossy(string_literal.value()));
+                        }
+                        ast::ExpressionListElement::Expression(expression) => {
+                            let result = self.evaluate_expression(expression);
+                            println!("{}", result);
                         }
                     }
                 }
-                ast::Statement::Let {
-                    variable,
-                    expression,
-                } => {
-                    let value = self.evaluate_expression(expression);
-                    self.store_variable(variable.identifier(), value);
-                }
-                _ => todo!("{statement:?}"),
             }
+            ast::Statement::Let {
+                variable,
+                expression,
+            } => {
+                let value = self.evaluate_expression(expression);
+                self.store_variable(variable.identifier(), value);
+            }
+            _ => todo!("{:?}", line.statement()),
         }
     }
 
