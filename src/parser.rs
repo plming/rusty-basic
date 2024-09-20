@@ -46,20 +46,9 @@ impl Parser {
         }
     }
 
-    pub fn parse_program(&mut self) -> Result<ast::Program, Error> {
-        let mut lines = Vec::new();
-
-        while !self.tokens.is_empty() {
-            let line = self.parse_line()?;
-            lines.push(line);
-        }
-
-        Ok(ast::Program::new(lines))
-    }
-
-    fn parse_line(&mut self) -> Result<ast::Line, Error> {
+    pub fn parse_line(&mut self) -> Result<ast::Line, Error> {
         let line_number = match self.consume_token() {
-            Some(Token::NumberLiteral { value }) => value,
+            Some(Token::NumberLiteral { value }) => value as u8,
             _ => Err(Error::LineNumberNotFound)?,
         };
 

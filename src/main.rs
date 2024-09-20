@@ -34,14 +34,14 @@ fn main() {
         };
 
         let mut parser = Parser::new(tokens);
-        let program = match parser.parse_program() {
-            Ok(program) => program,
+        let line = match parser.parse_line() {
+            Ok(line) => line,
             Err(error) => {
                 eprintln!("Parser error: {error:?}");
                 continue;
             }
         };
 
-        evaluator.run(program);
+        evaluator.process_line(line);
     }
 }
