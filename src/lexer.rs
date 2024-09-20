@@ -24,19 +24,6 @@ impl<'a> Lexer<'a> {
         Lexer { code, position: 0 }
     }
 
-    fn peek_next_char(&self) -> Option<u8> {
-        self.code.get(self.position).copied()
-    }
-
-    fn read_next_char(&mut self) -> Option<u8> {
-        let next_char = self.peek_next_char();
-        if next_char.is_some() {
-            self.position += 1;
-        }
-
-        next_char
-    }
-
     pub fn lex(&mut self) -> Result<VecDeque<Token>, Error> {
         let mut tokens = VecDeque::new();
 
@@ -145,6 +132,19 @@ impl<'a> Lexer<'a> {
         }
 
         Ok(tokens)
+    }
+
+    fn peek_next_char(&self) -> Option<u8> {
+        self.code.get(self.position).copied()
+    }
+
+    fn read_next_char(&mut self) -> Option<u8> {
+        let next_char = self.peek_next_char();
+        if next_char.is_some() {
+            self.position += 1;
+        }
+
+        next_char
     }
 }
 
