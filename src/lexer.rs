@@ -15,7 +15,7 @@ pub enum Error {
 pub struct Lexer<'a> {
     /// the code to lex
     code: &'a [u8],
-    /// the offset of the character not yet consumed
+    /// the index of the character not yet consumed
     position: usize,
 }
 
@@ -155,21 +155,22 @@ mod tests {
     #[test]
     fn lex_hello_world_returns_tokens() {
         let code = b"PRINT \"Hello, World!\"";
-        let mut lexer = Lexer::new(code);
         let expected = VecDeque::from([
             Token::Print,
             Token::StringLiteral {
                 value: b"Hello, World!".to_vec(),
             },
         ]);
+        let mut lexer = Lexer::new(code);
 
-        assert_eq!(lexer.lex(), Ok(expected));
+        let actual = lexer.lex();
+
+        assert_eq!(Ok(expected), actual);
     }
 
     #[test]
     fn lex_expression_returns_tokens() {
         let expression = b"1 + 2 * 3 / 4 - 5";
-        let mut lexer = Lexer::new(expression);
         let expected = VecDeque::from([
             Token::NumberLiteral { value: 1 },
             Token::Plus,
@@ -181,14 +182,16 @@ mod tests {
             Token::Minus,
             Token::NumberLiteral { value: 5 },
         ]);
+        let mut lexer = Lexer::new(expression);
 
-        assert_eq!(lexer.lex(), Ok(expected));
+        let actual = lexer.lex();
+
+        assert_eq!(Ok(expected), actual);
     }
 
     #[test]
     fn lex_keywords_returns_tokens() {
         let code = b"PRINT IF THEN GOTO INPUT LET GOSUB RETURN CLEAR LIST RUN END";
-        let mut lexer = Lexer::new(code);
         let expected = VecDeque::from([
             Token::Print,
             Token::If,
@@ -203,14 +206,16 @@ mod tests {
             Token::Run,
             Token::End,
         ]);
+        let mut lexer = Lexer::new(code);
 
-        assert_eq!(lexer.lex(), Ok(expected));
+        let actual = lexer.lex();
+
+        assert_eq!(Ok(expected), actual);
     }
 
     #[test]
     fn lex_variable_returns_token() {
         let code = b"IF A < B THEN PRINT Z";
-        let mut lexer = Lexer::new(code);
         let expected = VecDeque::from([
             Token::If,
             Token::Variable { identifier: b'A' },
@@ -220,14 +225,16 @@ mod tests {
             Token::Print,
             Token::Variable { identifier: b'Z' },
         ]);
+        let mut lexer = Lexer::new(code);
 
-        assert_eq!(lexer.lex(), Ok(expected));
+        let actual = lexer.lex();
+
+        assert_eq!(Ok(expected), actual);
     }
 
     #[test]
     fn lex_lowercase_variable_returns_uppercase_token() {
         let code = b"IF a < b THEN PRINT z";
-        let mut lexer = Lexer::new(code);
         let expected = VecDeque::from([
             Token::If,
             Token::Variable { identifier: b'A' },
@@ -237,8 +244,11 @@ mod tests {
             Token::Print,
             Token::Variable { identifier: b'Z' },
         ]);
+        let mut lexer = Lexer::new(code);
 
-        assert_eq!(lexer.lex(), Ok(expected));
+        let actual = lexer.lex();
+
+        assert_eq!(Ok(expected), actual);
     }
 
     #[test]
@@ -246,7 +256,9 @@ mod tests {
         let invalid_code = b"PRINT HELLO";
         let mut lexer = Lexer::new(invalid_code);
 
-        assert_eq!(lexer.lex(), Err(Error::UnknownIdentifier));
+        let actual = lexer.lex();
+
+        assert_eq!(Err(Error::UnknownIdentifier), actual);
     }
 
     #[test]
@@ -254,7 +266,9 @@ mod tests {
         let invalid_code = b"PRINT \"Hello, World!";
         let mut lexer = Lexer::new(invalid_code);
 
-        assert_eq!(lexer.lex(), Err(Error::NonTerminatedStringLiteral));
+        let actual = lexer.lex();
+
+        assert_eq!(Err(Error::NonTerminatedStringLiteral), actual);
     }
 
     #[test]
