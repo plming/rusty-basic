@@ -11,6 +11,7 @@ pub enum Error {
     RelationalOperatorNotFound,
     KeywordNotFound,
     LineNumberNotFound,
+    LineNumberOutOfRange,
 }
 
 pub struct Parser {
@@ -20,6 +21,22 @@ pub struct Parser {
 impl Parser {
     pub fn new(tokens: VecDeque<Token>) -> Self {
         Self { tokens }
+    }
+
+    pub fn parse_line(&mut self) -> Result<ast::Line, Error> {
+        let line_number = match self.consume_token() {
+            Some(Token::NumberLiteral { value }) => {
+                match u8::try_from(value) {
+                    Ok(line_number) => line_number,
+                    Err(_) => Err(Error::LineNumberOutOfRange)?,
+                }
+            }
+            _ => Err(Error::LineNumberNotFound)?,
+        };
+
+        let statement = self.parse_statement()?;
+
+        Ok(ast::Line::new(line_number, statement))
     }
 
     fn consume_token(&mut self) -> Option<Token> {
@@ -44,17 +61,6 @@ impl Parser {
             }
             None => Err(Error::NoMoreToken),
         }
-    }
-
-    pub fn parse_line(&mut self) -> Result<ast::Line, Error> {
-        let line_number = match self.consume_token() {
-            Some(Token::NumberLiteral { value }) => value as u8,
-            _ => Err(Error::LineNumberNotFound)?,
-        };
-
-        let statement = self.parse_statement()?;
-
-        Ok(ast::Line::new(line_number, statement))
     }
 
     fn parse_statement(&mut self) -> Result<ast::Statement, Error> {
