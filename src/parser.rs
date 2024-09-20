@@ -25,12 +25,10 @@ impl Parser {
 
     pub fn parse_line(&mut self) -> Result<ast::Line, Error> {
         let line_number = match self.consume_token() {
-            Some(Token::NumberLiteral { value }) => {
-                match u8::try_from(value) {
-                    Ok(line_number) => line_number,
-                    Err(_) => Err(Error::LineNumberOutOfRange)?,
-                }
-            }
+            Some(Token::NumberLiteral { value }) => match u8::try_from(value) {
+                Ok(line_number) => line_number,
+                Err(_) => Err(Error::LineNumberOutOfRange)?,
+            },
             _ => Err(Error::LineNumberNotFound)?,
         };
 
@@ -249,85 +247,95 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_print_hello_world_returns_ast() {
+    fn parse_line_hello_world_returns_ast() {
         let tokens = VecDeque::from([
+            Token::NumberLiteral { value: 10 },
             Token::Print,
             Token::StringLiteral {
                 value: b"Hello, World!".to_vec(),
             },
         ]);
+        let expected = ast::Line::new(
+            10,
+            ast::Statement::Print {
+                expression_list: vec![ast::ExpressionListElement::StringLiteral(
+                    ast::StringLiteral::new(b"Hello, World!".to_vec()),
+                )],
+            },
+        );
         let mut parser = Parser::new(tokens);
-        let expected = ast::Statement::Print {
-            expression_list: vec![ast::ExpressionListElement::StringLiteral(
-                ast::StringLiteral::new(b"Hello, World!".to_vec()),
-            )],
-        };
 
-        let actual = parser.parse_statement();
+        let actual = parser.parse_line();
 
         assert_eq!(Ok(expected), actual);
     }
 
     #[test]
-    fn parse_term_returns_ast() {
+    fn parse_line_terms_returns_ast() {
         let tokens = VecDeque::from([
+            Token::NumberLiteral { value: 10 },
+            Token::Print,
             Token::NumberLiteral { value: 2 },
-            Token::Multiply,
+            Token::Plus,
             Token::NumberLiteral { value: 3 },
         ]);
-
-        let mut expected = ast::Term::new(ast::Factor::NumberLiteral(ast::NumberLiteral::new(2)));
-        expected.multiply_by(ast::Factor::NumberLiteral(ast::NumberLiteral::new(3)));
-
+        let mut expression = ast::Expression::new(
+            None,
+            ast::Term::new(ast::Factor::NumberLiteral(ast::NumberLiteral::new(2))),
+        );
+        expression.add(ast::Term::new(ast::Factor::NumberLiteral(
+            ast::NumberLiteral::new(3),
+        )));
+        let expected = ast::Line::new(
+            10,
+            ast::Statement::Print {
+                expression_list: vec![ast::ExpressionListElement::Expression(expression)],
+            },
+        );
         let mut parser = Parser::new(tokens);
 
-        let actual = parser.parse_term();
+        let actual = parser.parse_line();
 
         assert_eq!(Ok(expected), actual);
     }
 
     #[test]
-    fn parse_expression_with_unary_operator_returns_ast() {
+    fn parse_line_with_unary_operator_returns_ast() {
         let tokens = VecDeque::from([
+            Token::NumberLiteral { value: 10 },
+            Token::Print,
             Token::Minus,
             Token::NumberLiteral { value: 2 },
             Token::Plus,
             Token::NumberLiteral { value: 3 },
         ]);
-        let mut expected = ast::Expression::new(
+        let mut expression = ast::Expression::new(
             Some(ast::AdditiveOperator::Subtraction),
             ast::Term::new(ast::Factor::NumberLiteral(ast::NumberLiteral::new(2))),
         );
-        expected.add(ast::Term::new(ast::Factor::NumberLiteral(
+        expression.add(ast::Term::new(ast::Factor::NumberLiteral(
             ast::NumberLiteral::new(3),
         )));
-
+        let expected = ast::Line::new(
+            10,
+            ast::Statement::Print {
+                expression_list: vec![ast::ExpressionListElement::Expression(expression)],
+            },
+        );
         let mut parser = Parser::new(tokens);
 
-        let actual = parser.parse_expression();
+        let actual = parser.parse_line();
 
         assert_eq!(Ok(expected), actual);
     }
 
     #[test]
-    fn parse_expression_without_unary_operator_returns_ast() {
-        let tokens = VecDeque::from([
-            Token::NumberLiteral { value: 3 },
-            Token::Plus,
-            Token::NumberLiteral { value: 4 },
-        ]);
-        let mut expected = ast::Expression::new(
-            None,
-            ast::Term::new(ast::Factor::NumberLiteral(ast::NumberLiteral::new(3))),
-        );
-        expected.add(ast::Term::new(ast::Factor::NumberLiteral(
-            ast::NumberLiteral::new(4),
-        )));
-
+    fn parse_line_no_line_number_returns_error() {
+        let tokens = VecDeque::from([Token::Print, Token::NumberLiteral { value: 42 }]);
         let mut parser = Parser::new(tokens);
 
-        let actual = parser.parse_expression();
+        let actual = parser.parse_line();
 
-        assert_eq!(Ok(expected), actual);
+        assert_eq!(Err(Error::LineNumberNotFound), actual);
     }
 }
