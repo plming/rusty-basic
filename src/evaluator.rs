@@ -7,6 +7,7 @@ const NUM_VARIABLES: usize = 26;
 #[derive(Debug)]
 pub enum Error {
     LineNumberOutOfRange,
+    UnknownLineNumber,
 }
 
 pub struct Evaluator {
@@ -43,12 +44,12 @@ impl Evaluator {
         self.lines.push(line);
     }
 
-    fn jump(&mut self, line_number: u8) {
-        if let Some(&index) = self.label_to_index.get(&line_number) {
-            self.program_counter = index;
-        } else {
-            eprintln!("Line {} not found", line_number);
-        }
+    fn jump(&mut self, line_number: u8) -> Result<(), Error> {
+        match self.label_to_index.get(&line_number) {
+            Some(&index) => self.program_counter = index,
+            None => Err(Error::UnknownLineNumber)?
+        };
+        Ok(())
     }
 
     fn run_direct(&mut self, statement: &Statement) -> Result<(), Error> {
@@ -80,7 +81,7 @@ impl Evaluator {
                     Err(_) => Err(Error::LineNumberOutOfRange)?,
                 };
 
-                self.jump(line_number);
+                self.jump(line_number)?;
             }
             Statement::Run => {
                 self.program_counter = 0;
