@@ -67,13 +67,27 @@ impl Evaluator {
                     }
                 }
             }
-
-            Statement::Let {
-                variable,
-                expression,
+            Statement::If {
+                left,
+                operator,
+                right,
+                then,
             } => {
-                let value = self.evaluate_expression(expression);
-                self.store_variable(variable.identifier(), value);
+                let left_value = self.evaluate_expression(left);
+                let right_value = self.evaluate_expression(right);
+
+                let condition = match operator {
+                    ast::RelationalOperator::LessThan => left_value < right_value,
+                    ast::RelationalOperator::LessThanOrEqual => left_value <= right_value,
+                    ast::RelationalOperator::GreaterThan => left_value > right_value,
+                    ast::RelationalOperator::GreaterThanOrEqual => left_value >= right_value,
+                    ast::RelationalOperator::Equal => left_value == right_value,
+                    ast::RelationalOperator::NotEqual => left_value != right_value,
+                };
+
+                if condition {
+                    self.run_direct(then)?;
+                }
             }
             Statement::Goto { expression } => {
                 let line_number = match u8::try_from(self.evaluate_expression(expression)) {
@@ -83,6 +97,28 @@ impl Evaluator {
 
                 self.jump(line_number)?;
             }
+            Statement::Input { variable_list: _ } => {
+                todo!("implement input statement");
+            }
+            Statement::Let {
+                variable,
+                expression,
+            } => {
+                let value = self.evaluate_expression(expression);
+                self.store_variable(variable.identifier(), value);
+            }
+            Statement::GoSub { expression } => {
+                todo!()
+            }
+            Statement::Return => {
+                todo!()
+            }
+            Statement::Clear => {
+                todo!()
+            }
+            Statement::List => {
+                todo!()
+            }
             Statement::Run => {
                 self.program_counter = 0;
                 self.run_indirect()?;
@@ -90,7 +126,6 @@ impl Evaluator {
             Statement::End => {
                 self.program_counter = self.lines.len();
             }
-            _ => todo!("{:?}", statement),
         }
 
         Ok(())
