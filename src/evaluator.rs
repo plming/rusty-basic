@@ -47,7 +47,7 @@ impl Evaluator {
     fn jump(&mut self, line_number: u8) -> Result<(), Error> {
         match self.label_to_index.get(&line_number) {
             Some(&index) => self.program_counter = index,
-            None => Err(Error::UnknownLineNumber)?
+            None => Err(Error::UnknownLineNumber)?,
         };
         Ok(())
     }
