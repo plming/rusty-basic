@@ -10,7 +10,6 @@ pub enum Error {
     NoMoreToken,
     RelationalOperatorNotFound,
     KeywordNotFound,
-    LineNumberNotFound,
     LineNumberOutOfRange,
 }
 
@@ -24,12 +23,15 @@ impl Parser {
     }
 
     pub fn parse_line(&mut self) -> Result<ast::Line, Error> {
-        let line_number = match self.consume_token() {
+        let line_number = match self.peek_token() {
             Some(Token::NumberLiteral { value }) => match u8::try_from(value) {
-                Ok(line_number) => line_number,
+                Ok(line_number) => {
+                    self.consume_token();
+                    Some(line_number)
+                }
                 Err(_) => Err(Error::LineNumberOutOfRange)?,
             },
-            _ => Err(Error::LineNumberNotFound)?,
+            _ => Option::None,
         };
 
         let statement = self.parse_statement()?;
@@ -256,7 +258,7 @@ mod tests {
             },
         ]);
         let expected = ast::Line::new(
-            10,
+            None,
             ast::Statement::Print {
                 expression_list: vec![ast::ExpressionListElement::StringLiteral(
                     ast::StringLiteral::new(b"Hello, World!".to_vec()),
@@ -287,7 +289,7 @@ mod tests {
             ast::NumberLiteral::new(3),
         )));
         let expected = ast::Line::new(
-            10,
+            None,
             ast::Statement::Print {
                 expression_list: vec![ast::ExpressionListElement::Expression(expression)],
             },
@@ -317,7 +319,7 @@ mod tests {
             ast::NumberLiteral::new(3),
         )));
         let expected = ast::Line::new(
-            10,
+            None,
             ast::Statement::Print {
                 expression_list: vec![ast::ExpressionListElement::Expression(expression)],
             },
@@ -327,15 +329,5 @@ mod tests {
         let actual = parser.parse_line();
 
         assert_eq!(Ok(expected), actual);
-    }
-
-    #[test]
-    fn parse_line_no_line_number_returns_error() {
-        let tokens = VecDeque::from([Token::Print, Token::NumberLiteral { value: 42 }]);
-        let mut parser = Parser::new(tokens);
-
-        let actual = parser.parse_line();
-
-        assert_eq!(Err(Error::LineNumberNotFound), actual);
     }
 }

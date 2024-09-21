@@ -197,16 +197,16 @@ pub enum RelationalOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Line {
-    number: u8,
+    number: Option<u8>,
     statement: Statement,
 }
 
 impl Line {
-    pub fn new(number: u8, statement: Statement) -> Self {
+    pub fn new(number: Option<u8>, statement: Statement) -> Self {
         Self { number, statement }
     }
 
-    pub fn number(&self) -> u8 {
+    pub fn number(&self) -> Option<u8> {
         self.number
     }
 

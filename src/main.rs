@@ -42,6 +42,13 @@ fn main() {
             }
         };
 
-        evaluator.process_line(line);
+        let result = evaluator.process_line(line);
+        match result {
+            Ok(()) => {}
+            Err(error) => {
+                eprintln!("Runtime error: {error:?}");
+                continue;
+            }
+        };
     }
 }

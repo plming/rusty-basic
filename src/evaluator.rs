@@ -28,22 +28,18 @@ impl Evaluator {
     }
 
     pub fn process_line(&mut self, line: ast::Line) -> Result<(), Error> {
-        let statement = line.statement();
-        match statement {
-            Statement::Run => {
-                self.program_counter = 0;
-                self.run_indirect()?;
-            }
-            Statement::End => {
-                self.program_counter = self.lines.len();
-            }
-            _ => self.load_line(line),
+        match line.number().is_some() {
+            true => self.load_line(line),
+            false => self.run_direct(line.statement())?,
         }
+
         Ok(())
     }
 
     fn load_line(&mut self, line: ast::Line) {
-        self.label_to_index.insert(line.number(), self.lines.len());
+        debug_assert!(line.number().is_some());
+        self.label_to_index
+            .insert(line.number().unwrap(), self.lines.len());
         self.lines.push(line);
     }
 
@@ -84,6 +80,13 @@ impl Evaluator {
                 };
 
                 self.jump(line_number);
+            }
+            Statement::Run => {
+                self.program_counter = 0;
+                self.run_indirect()?;
+            }
+            Statement::End => {
+                self.program_counter = self.lines.len();
             }
             _ => todo!("{:?}", statement),
         }
