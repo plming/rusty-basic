@@ -1,6 +1,6 @@
+use crate::ast;
+use crate::ast::{Expression, ExpressionListElement, Factor, Line, Statement, Term};
 use std::collections::HashMap;
-
-use crate::ast::{self, Statement};
 
 const NUM_VARIABLES: usize = 26;
 
@@ -10,7 +10,7 @@ pub enum Error {
 }
 
 pub struct Evaluator {
-    lines: Vec<ast::Line>,
+    lines: Vec<Line>,
     label_to_index: HashMap<u8, usize>,
     /// Points to lines
     program_counter: usize,
@@ -27,7 +27,7 @@ impl Evaluator {
         }
     }
 
-    pub fn process_line(&mut self, line: ast::Line) -> Result<(), Error> {
+    pub fn process_line(&mut self, line: Line) -> Result<(), Error> {
         match line.number().is_some() {
             true => self.load_line(line),
             false => self.run_direct(line.statement())?,
@@ -36,7 +36,7 @@ impl Evaluator {
         Ok(())
     }
 
-    fn load_line(&mut self, line: ast::Line) {
+    fn load_line(&mut self, line: Line) {
         debug_assert!(line.number().is_some());
         self.label_to_index
             .insert(line.number().unwrap(), self.lines.len());
@@ -53,27 +53,28 @@ impl Evaluator {
 
     fn run_direct(&mut self, statement: &Statement) -> Result<(), Error> {
         match statement {
-            ast::Statement::Print { expression_list } => {
+            Statement::Print { expression_list } => {
                 for element in expression_list {
                     match element {
-                        ast::ExpressionListElement::StringLiteral(string_literal) => {
+                        ExpressionListElement::StringLiteral(string_literal) => {
                             println!("{}", String::from_utf8_lossy(string_literal.value()));
                         }
-                        ast::ExpressionListElement::Expression(expression) => {
+                        ExpressionListElement::Expression(expression) => {
                             let result = self.evaluate_expression(expression);
                             println!("{}", result);
                         }
                     }
                 }
             }
-            ast::Statement::Let {
+
+            Statement::Let {
                 variable,
                 expression,
             } => {
                 let value = self.evaluate_expression(expression);
                 self.store_variable(variable.identifier(), value);
             }
-            ast::Statement::Goto { expression } => {
+            Statement::Goto { expression } => {
                 let line_number = match u8::try_from(self.evaluate_expression(expression)) {
                     Ok(line_number) => line_number,
                     Err(_) => Err(Error::LineNumberOutOfRange)?,
@@ -104,7 +105,7 @@ impl Evaluator {
         Ok(())
     }
 
-    fn evaluate_expression(&self, expression: &ast::Expression) -> i16 {
+    fn evaluate_expression(&self, expression: &Expression) -> i16 {
         let terms = expression.terms();
         let operators = expression.operators();
 
@@ -125,7 +126,7 @@ impl Evaluator {
         result
     }
 
-    fn evaluate_term(&self, term: &ast::Term) -> i16 {
+    fn evaluate_term(&self, term: &Term) -> i16 {
         let factors = term.factors();
         let operators = term.operators();
 
@@ -146,14 +147,14 @@ impl Evaluator {
         result
     }
 
-    fn evaluate_factor(&self, factor: &ast::Factor) -> i16 {
+    fn evaluate_factor(&self, factor: &Factor) -> i16 {
         match factor {
-            ast::Factor::Variable(variable) => {
+            Factor::Variable(variable) => {
                 let identifier = variable.identifier();
                 self.load_variable(identifier)
             }
-            ast::Factor::NumberLiteral(number) => number.value(),
-            ast::Factor::Expression(expression) => self.evaluate_expression(expression),
+            Factor::NumberLiteral(number) => number.value(),
+            Factor::Expression(expression) => self.evaluate_expression(expression),
         }
     }
 
