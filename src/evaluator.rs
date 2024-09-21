@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+use std::io::Write;
+
 use crate::ast;
 use crate::ast::{Expression, ExpressionListElement, Factor, Line, Statement, Term};
-use std::collections::HashMap;
 
 const NUM_VARIABLES: usize = 26;
 
@@ -10,21 +12,23 @@ pub enum Error {
     UnknownLineNumber,
 }
 
-pub struct Evaluator {
+pub struct Evaluator<'a> {
     lines: Vec<Line>,
     label_to_index: HashMap<u8, usize>,
     /// Points to lines
     program_counter: usize,
     variables: [i16; NUM_VARIABLES],
+    output: &'a mut dyn Write,
 }
 
-impl Evaluator {
-    pub fn new() -> Self {
+impl<'a> Evaluator<'a> {
+    pub fn new(output: &'a mut dyn Write) -> Self {
         Self {
             lines: Vec::new(),
             label_to_index: HashMap::new(),
             program_counter: 0,
             variables: [0; NUM_VARIABLES],
+            output,
         }
     }
 
@@ -58,11 +62,16 @@ impl Evaluator {
                 for element in expression_list {
                     match element {
                         ExpressionListElement::StringLiteral(string_literal) => {
-                            println!("{}", String::from_utf8_lossy(string_literal.value()));
+                            writeln!(
+                                self.output,
+                                "{}",
+                                String::from_utf8_lossy(string_literal.value())
+                            )
+                            .unwrap();
                         }
                         ExpressionListElement::Expression(expression) => {
                             let result = self.evaluate_expression(expression);
-                            println!("{}", result);
+                            writeln!(self.output, "{}", result).unwrap();
                         }
                     }
                 }

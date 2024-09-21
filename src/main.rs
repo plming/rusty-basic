@@ -11,8 +11,9 @@ use lexer::Lexer;
 use parser::Parser;
 
 fn main() {
+    let mut stdout = std::io::stdout();
     let mut buffer = String::new();
-    let mut evaluator = Evaluator::new();
+    let mut evaluator = Evaluator::new(&mut stdout);
 
     loop {
         // Print a prompt
