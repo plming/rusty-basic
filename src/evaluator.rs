@@ -27,18 +27,19 @@ impl Evaluator {
         }
     }
 
-    pub fn process_line(&mut self, line: ast::Line) {
+    pub fn process_line(&mut self, line: ast::Line) -> Result<(), Error> {
         let statement = line.statement();
         match statement {
             Statement::Run => {
                 self.program_counter = 0;
-                self.run();
+                self.run_indirect()?;
             }
             Statement::End => {
                 self.program_counter = self.lines.len();
             }
             _ => self.load_line(line),
         }
+        Ok(())
     }
 
     fn load_line(&mut self, line: ast::Line) {
@@ -54,43 +55,46 @@ impl Evaluator {
         }
     }
 
-    fn run(&mut self) -> Result<(), Error> {
-        while self.program_counter < self.lines.len() {
-            let line = &self.lines[self.program_counter];
-
-            match line.statement() {
-                ast::Statement::Print { expression_list } => {
-                    for element in expression_list {
-                        match element {
-                            ast::ExpressionListElement::StringLiteral(string_literal) => {
-                                println!("{}", String::from_utf8_lossy(string_literal.value()));
-                            }
-                            ast::ExpressionListElement::Expression(expression) => {
-                                let result = self.evaluate_expression(expression);
-                                println!("{}", result);
-                            }
+    fn run_direct(&mut self, statement: &Statement) -> Result<(), Error> {
+        match statement {
+            ast::Statement::Print { expression_list } => {
+                for element in expression_list {
+                    match element {
+                        ast::ExpressionListElement::StringLiteral(string_literal) => {
+                            println!("{}", String::from_utf8_lossy(string_literal.value()));
+                        }
+                        ast::ExpressionListElement::Expression(expression) => {
+                            let result = self.evaluate_expression(expression);
+                            println!("{}", result);
                         }
                     }
                 }
-                ast::Statement::Let {
-                    variable,
-                    expression,
-                } => {
-                    let value = self.evaluate_expression(expression);
-                    self.store_variable(variable.identifier(), value);
-                }
-                ast::Statement::Goto { expression } => {
-                    let line_number = match u8::try_from(self.evaluate_expression(expression)) {
-                        Ok(line_number) => line_number,
-                        Err(_) => Err(Error::LineNumberOutOfRange)?,
-                    };
-
-                    self.jump(line_number as u8);
-                    continue;
-                }
-                _ => todo!("{:?}", line.statement()),
             }
+            ast::Statement::Let {
+                variable,
+                expression,
+            } => {
+                let value = self.evaluate_expression(expression);
+                self.store_variable(variable.identifier(), value);
+            }
+            ast::Statement::Goto { expression } => {
+                let line_number = match u8::try_from(self.evaluate_expression(expression)) {
+                    Ok(line_number) => line_number,
+                    Err(_) => Err(Error::LineNumberOutOfRange)?,
+                };
 
+                self.jump(line_number);
+            }
+            _ => todo!("{:?}", statement),
+        }
+
+        Ok(())
+    }
+
+    fn run_indirect(&mut self) -> Result<(), Error> {
+        while self.program_counter < self.lines.len() {
+            let line = &self.lines[self.program_counter];
+            self.run_direct(&line.statement().clone())?;
             self.program_counter += 1;
         }
 
