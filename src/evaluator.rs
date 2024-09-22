@@ -61,22 +61,9 @@ impl<'a> Evaluator<'a> {
     fn run_direct(&mut self, statement: &Statement) -> Result<(), Error> {
         match statement {
             Statement::Print { expression_list } => {
-                for element in expression_list {
-                    match element {
-                        ExpressionListElement::StringLiteral(string_literal) => {
-                            writeln!(
-                                self.output,
-                                "{}",
-                                String::from_utf8_lossy(string_literal.value())
-                            )
-                            .unwrap();
-                        }
-                        ExpressionListElement::Expression(expression) => {
-                            let result = self.evaluate_expression(expression);
-                            writeln!(self.output, "{}", result).unwrap();
-                        }
-                    }
-                }
+                expression_list.iter().for_each(|element| {
+                    writeln!(self.output, "{element}").unwrap();
+                });
             }
             Statement::If {
                 left,
