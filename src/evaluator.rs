@@ -1,9 +1,9 @@
-use std::collections::HashMap;
 use std::io::Write;
 
 use crate::ast;
 use crate::ast::{Expression, ExpressionListElement, Factor, Line, Statement, Term};
 
+const STORAGE_SIZE: usize = 256;
 const NUM_VARIABLES: usize = 26;
 
 #[derive(Debug)]
@@ -13,9 +13,7 @@ pub enum Error {
 }
 
 pub struct Evaluator<'a> {
-    lines: Vec<Line>,
-    label_to_index: HashMap<u8, usize>,
-    /// Points to lines
+    storage: Vec<Option<Line>>,
     program_counter: usize,
     variables: [i16; NUM_VARIABLES],
     output: &'a mut dyn Write,
@@ -24,8 +22,7 @@ pub struct Evaluator<'a> {
 impl<'a> Evaluator<'a> {
     pub fn new(output: &'a mut dyn Write) -> Self {
         Self {
-            lines: Vec::new(),
-            label_to_index: HashMap::new(),
+            storage: vec![None; STORAGE_SIZE],
             program_counter: 0,
             variables: [0; NUM_VARIABLES],
             output,
@@ -43,16 +40,19 @@ impl<'a> Evaluator<'a> {
 
     fn load_line(&mut self, line: Line) {
         debug_assert!(line.number().is_some());
-        self.label_to_index
-            .insert(line.number().unwrap(), self.lines.len());
-        self.lines.push(line);
+
+        let label = line.number().unwrap();
+        self.storage[label as usize] = Some(line);
     }
 
     fn jump(&mut self, line_number: u8) -> Result<(), Error> {
-        match self.label_to_index.get(&line_number) {
-            Some(&index) => self.program_counter = index,
+        match self.storage.get(line_number as usize) {
+            Some(_) => {
+                self.program_counter = line_number as usize;
+            }
             None => Err(Error::UnknownLineNumber)?,
         };
+
         Ok(())
     }
 
@@ -116,7 +116,7 @@ impl<'a> Evaluator<'a> {
                 let value = self.evaluate_expression(expression);
                 self.store_variable(variable.identifier(), value);
             }
-            Statement::GoSub { expression } => {
+            Statement::GoSub { expression: _ } => {
                 todo!()
             }
             Statement::Return => {
@@ -126,14 +126,18 @@ impl<'a> Evaluator<'a> {
                 todo!()
             }
             Statement::List => {
-                todo!()
+                self.storage.iter().for_each(|line| {
+                    if let Some(line) = line {
+                        writeln!(self.output, "{}", line).unwrap();
+                    }
+                });
             }
             Statement::Run => {
                 self.program_counter = 0;
                 self.run_indirect()?;
             }
             Statement::End => {
-                self.program_counter = self.lines.len();
+                self.program_counter = self.storage.len();
             }
         }
 
@@ -141,8 +145,15 @@ impl<'a> Evaluator<'a> {
     }
 
     fn run_indirect(&mut self) -> Result<(), Error> {
-        while self.program_counter < self.lines.len() {
-            let line = &self.lines[self.program_counter];
+        while self.program_counter < self.storage.len() {
+            let line = match &self.storage[self.program_counter] {
+                Some(line) => line,
+                None => {
+                    self.program_counter += 1;
+                    continue;
+                }
+            };
+
             self.run_direct(&line.statement().clone())?;
             self.program_counter += 1;
         }

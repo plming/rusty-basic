@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Variable {
     identifier: u8,
@@ -11,6 +13,12 @@ impl Variable {
 
     pub fn identifier(&self) -> u8 {
         self.identifier
+    }
+}
+
+impl fmt::Display for Variable {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.identifier as char)
     }
 }
 
@@ -29,6 +37,12 @@ impl NumberLiteral {
     }
 }
 
+impl fmt::Display for NumberLiteral {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct StringLiteral {
     value: Vec<u8>,
@@ -44,11 +58,27 @@ impl StringLiteral {
     }
 }
 
+impl fmt::Display for StringLiteral {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", String::from_utf8_lossy(&self.value))
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Factor {
     Variable(Variable),
     NumberLiteral(NumberLiteral),
     Expression(Box<Expression>),
+}
+
+impl fmt::Display for Factor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Factor::Variable(variable) => write!(f, "{}", variable),
+            Factor::NumberLiteral(number_literal) => write!(f, "{}", number_literal),
+            Factor::Expression(expression) => write!(f, "({})", expression),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -89,10 +119,35 @@ impl Term {
     }
 }
 
+impl fmt::Display for Term {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut result = String::new();
+
+        for i in 0..self.factors.len() {
+            if i > 0 {
+                result.push_str(&format!("{}", self.operators[i - 1]));
+            }
+
+            result.push_str(&format!("{}", self.factors[i]));
+        }
+
+        write!(f, "{}", result)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum MultiplicativeOperator {
     Multiplication,
     Division,
+}
+
+impl fmt::Display for MultiplicativeOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MultiplicativeOperator::Multiplication => write!(f, "*"),
+            MultiplicativeOperator::Division => write!(f, "/"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -142,16 +197,50 @@ impl Expression {
     }
 }
 
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut result = String::new();
+
+        for i in 0..self.terms.len() {
+            if i > 0 {
+                result.push_str(&format!("{}", self.operators[i - 1]));
+            }
+
+            result.push_str(&format!("{}", self.terms[i]));
+        }
+
+        write!(f, "{}", result)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum AdditiveOperator {
     Addition,
     Subtraction,
 }
 
+impl fmt::Display for AdditiveOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AdditiveOperator::Addition => write!(f, "+"),
+            AdditiveOperator::Subtraction => write!(f, "-"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum ExpressionListElement {
     StringLiteral(StringLiteral),
     Expression(Expression),
+}
+
+impl fmt::Display for ExpressionListElement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ExpressionListElement::StringLiteral(string_literal) => write!(f, "{}", string_literal),
+            ExpressionListElement::Expression(expression) => write!(f, "{}", expression),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -185,6 +274,56 @@ pub enum Statement {
     End,
 }
 
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Statement::Print { expression_list } => {
+                write!(f, "PRINT ")?;
+
+                for (i, element) in expression_list.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+
+                    write!(f, "{}", element)?;
+                }
+
+                Ok(())
+            }
+            Statement::If {
+                left,
+                operator,
+                right,
+                then,
+            } => write!(f, "IF {} {} {} THEN {}", left, operator, right, then),
+            Statement::Goto { expression } => write!(f, "GOTO {}", expression),
+            Statement::Input { variable_list } => {
+                write!(f, "INPUT ")?;
+
+                for (i, variable) in variable_list.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+
+                    write!(f, "{}", variable)?;
+                }
+
+                Ok(())
+            }
+            Statement::Let {
+                variable,
+                expression,
+            } => write!(f, "LET {} = {}", variable, expression),
+            Statement::GoSub { expression } => write!(f, "GOSUB {}", expression),
+            Statement::Return => write!(f, "RETURN"),
+            Statement::Clear => write!(f, "CLEAR"),
+            Statement::List => write!(f, "LIST"),
+            Statement::Run => write!(f, "RUN"),
+            Statement::End => write!(f, "END"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum RelationalOperator {
     Equal,
@@ -193,6 +332,19 @@ pub enum RelationalOperator {
     LessThanOrEqual,
     GreaterThan,
     GreaterThanOrEqual,
+}
+
+impl fmt::Display for RelationalOperator {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RelationalOperator::Equal => write!(f, "="),
+            RelationalOperator::NotEqual => write!(f, "<>"),
+            RelationalOperator::LessThan => write!(f, "<"),
+            RelationalOperator::LessThanOrEqual => write!(f, "<="),
+            RelationalOperator::GreaterThan => write!(f, ">"),
+            RelationalOperator::GreaterThanOrEqual => write!(f, ">="),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -212,5 +364,15 @@ impl Line {
 
     pub fn statement(&self) -> &Statement {
         &self.statement
+    }
+}
+
+impl fmt::Display for Line {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(number) = self.number {
+            write!(f, "{} ", number)?;
+        }
+
+        write!(f, "{}", self.statement)
     }
 }
