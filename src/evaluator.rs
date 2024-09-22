@@ -14,6 +14,7 @@ pub enum Error {
 
 pub struct Evaluator<'a> {
     storage: Vec<Option<Line>>,
+    stack: Vec<usize>,
     program_counter: usize,
     variables: [i16; NUM_VARIABLES],
     output: &'a mut dyn Write,
@@ -23,6 +24,7 @@ impl<'a> Evaluator<'a> {
     pub fn new(output: &'a mut dyn Write) -> Self {
         Self {
             storage: vec![None; STORAGE_SIZE],
+            stack: Vec::new(),
             program_counter: 0,
             variables: [0; NUM_VARIABLES],
             output,
@@ -116,14 +118,23 @@ impl<'a> Evaluator<'a> {
                 let value = self.evaluate_expression(expression);
                 self.store_variable(variable.identifier(), value);
             }
-            Statement::GoSub { expression: _ } => {
-                todo!()
+            Statement::GoSub { expression } => {
+                let line_number = match u8::try_from(self.evaluate_expression(expression)) {
+                    Ok(line_number) => line_number,
+                    Err(_) => Err(Error::LineNumberOutOfRange)?,
+                };
+
+                self.stack.push(self.program_counter);
+                self.jump(line_number)?;
             }
-            Statement::Return => {
-                todo!()
-            }
+            Statement::Return => match self.stack.pop() {
+                Some(line_number) => self.program_counter = line_number,
+                None => {
+                    self.program_counter = self.storage.len();
+                }
+            },
             Statement::Clear => {
-                todo!()
+                self.storage = vec![None; STORAGE_SIZE];
             }
             Statement::List => {
                 self.storage.iter().for_each(|line| {
