@@ -88,11 +88,8 @@ impl<'a> Evaluator<'a> {
                 }
             }
             Statement::Goto { expression } => {
-                let line_number = match u8::try_from(self.evaluate_expression(expression)) {
-                    Ok(line_number) => line_number,
-                    Err(_) => Err(Error::LineNumberOutOfRange)?,
-                };
-
+                let line_number = Self::to_line_number(self.evaluate_expression(expression))?;
+                
                 self.jump(line_number)?;
             }
             Statement::Input { variable_list: _ } => {
@@ -106,10 +103,7 @@ impl<'a> Evaluator<'a> {
                 self.store_variable(variable.identifier(), value);
             }
             Statement::GoSub { expression } => {
-                let line_number = match u8::try_from(self.evaluate_expression(expression)) {
-                    Ok(line_number) => line_number,
-                    Err(_) => Err(Error::LineNumberOutOfRange)?,
-                };
+                let line_number = Self::to_line_number(self.evaluate_expression(expression))?;
 
                 self.stack.push(self.program_counter);
                 self.jump(line_number)?;
@@ -140,6 +134,13 @@ impl<'a> Evaluator<'a> {
         }
 
         Ok(())
+    }
+
+    fn to_line_number(value: i16) -> Result<u8, Error> {
+        match u8::try_from(value) {
+            Ok(line_number) => Ok(line_number),
+            Err(_) => Err(Error::LineNumberOutOfRange)?,
+        }
     }
 
     fn run_indirect(&mut self) -> Result<(), Error> {
