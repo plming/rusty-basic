@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, vec};
+use std::collections::VecDeque;
 
 use crate::token::Token;
 
@@ -69,7 +69,11 @@ impl<'a> Lexer<'a> {
                     Token::NumberLiteral { value }
                 }
                 ch if ch.is_ascii_alphabetic() => {
-                    let mut identifier = vec![ch.to_ascii_uppercase()];
+                    /// The longest length of valid identifiers.
+                    const MAX_IDENTIFIER_LENGTH: usize = 6;
+
+                    let mut identifier = Vec::with_capacity(MAX_IDENTIFIER_LENGTH);
+                    identifier.push(ch.to_ascii_uppercase());
 
                     while let Some(ch) = self.peek_next_char() {
                         if !ch.is_ascii_alphanumeric() {
