@@ -66,7 +66,7 @@ impl<'a> Lexer<'a> {
                         value += (digit - b'0') as i16;
                         self.read_next_char();
                     }
-                    Token::NumberLiteral { value }
+                    Token::NumberLiteral(value)
                 }
                 ch if ch.is_ascii_alphabetic() => {
                     /// The longest length of valid identifiers.
@@ -176,15 +176,15 @@ mod tests {
     fn lex_expression_returns_tokens() {
         let expression = b"1 + 2 * 3 / 4 - 5";
         let expected = VecDeque::from([
-            Token::NumberLiteral { value: 1 },
+            Token::NumberLiteral(1),
             Token::Plus,
-            Token::NumberLiteral { value: 2 },
+            Token::NumberLiteral(2),
             Token::Multiply,
-            Token::NumberLiteral { value: 3 },
+            Token::NumberLiteral(3),
             Token::Divide,
-            Token::NumberLiteral { value: 4 },
+            Token::NumberLiteral(4),
             Token::Minus,
-            Token::NumberLiteral { value: 5 },
+            Token::NumberLiteral(5),
         ]);
         let mut lexer = Lexer::new(expression);
 

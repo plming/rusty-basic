@@ -89,7 +89,7 @@ impl<'a> Evaluator<'a> {
             }
             Statement::Goto { expression } => {
                 let line_number = Self::to_line_number(self.evaluate_expression(expression))?;
-                
+
                 self.jump(line_number)?;
             }
             Statement::Input { variable_list: _ } => {

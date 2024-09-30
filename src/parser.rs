@@ -24,7 +24,7 @@ impl Parser {
 
     pub fn parse_line(&mut self) -> Result<ast::Line, Error> {
         let line_number = match self.peek_token() {
-            Some(Token::NumberLiteral { value }) => match u8::try_from(value) {
+            Some(Token::NumberLiteral(value)) => match u8::try_from(value) {
                 Ok(line_number) => {
                     self.consume_token();
                     Some(line_number)
@@ -230,7 +230,7 @@ impl Parser {
                 let variable = ast::Variable::new(identifier);
                 Ok(ast::Factor::Variable(variable))
             }
-            Some(Token::NumberLiteral { value }) => {
+            Some(Token::NumberLiteral(value)) => {
                 self.consume_token();
                 Ok(ast::Factor::NumberLiteral(ast::NumberLiteral::new(value)))
             }
@@ -251,7 +251,7 @@ mod tests {
     #[test]
     fn parse_line_hello_world_returns_ast() {
         let tokens = VecDeque::from([
-            Token::NumberLiteral { value: 10 },
+            Token::NumberLiteral(10),
             Token::Print,
             Token::StringLiteral {
                 value: b"Hello, World!".to_vec(),
@@ -275,11 +275,11 @@ mod tests {
     #[test]
     fn parse_line_terms_returns_ast() {
         let tokens = VecDeque::from([
-            Token::NumberLiteral { value: 10 },
+            Token::NumberLiteral(10),
             Token::Print,
-            Token::NumberLiteral { value: 2 },
+            Token::NumberLiteral(2),
             Token::Plus,
-            Token::NumberLiteral { value: 3 },
+            Token::NumberLiteral(3),
         ]);
         let mut expression = ast::Expression::new(
             None,
@@ -304,12 +304,12 @@ mod tests {
     #[test]
     fn parse_line_with_unary_operator_returns_ast() {
         let tokens = VecDeque::from([
-            Token::NumberLiteral { value: 10 },
+            Token::NumberLiteral(10),
             Token::Print,
             Token::Minus,
-            Token::NumberLiteral { value: 2 },
+            Token::NumberLiteral(2),
             Token::Plus,
-            Token::NumberLiteral { value: 3 },
+            Token::NumberLiteral(3),
         ]);
         let mut expression = ast::Expression::new(
             Some(ast::AdditiveOperator::Subtraction),

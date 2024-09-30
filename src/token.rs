@@ -13,7 +13,7 @@ pub enum Token {
     Minus,
     Multiply,
     Divide,
-    NumberLiteral { value: i16 },
+    NumberLiteral(i16),
     StringLiteral { value: Vec<u8> },
     Variable { identifier: u8 },
     Print,
