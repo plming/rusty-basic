@@ -1,7 +1,7 @@
 use std::io::Write;
 
-use crate::ast;
-use crate::ast::{Expression, ExpressionListElement, Factor, Line, Statement, Term};
+use crate::ast::{self, AdditiveOperator};
+use crate::ast::{Expression, Factor, Line, Statement, Term};
 
 const STORAGE_SIZE: usize = 256;
 const NUM_VARIABLES: usize = 26;
@@ -161,20 +161,19 @@ impl<'a> Evaluator<'a> {
     }
 
     fn evaluate_expression(&self, expression: &Expression) -> i16 {
-        let terms = expression.terms();
-        let operators = expression.operators();
+        let term = expression.term();
+        let mut result = self.evaluate_term(term);
 
-        let mut result = 0;
+        if let Some(AdditiveOperator::Subtraction) = expression.unary_operator() {
+            result = -result;
+        }
 
-        for i in 0..terms.len() {
-            let operator = &operators[i];
-            let term = &terms[i];
-
+        for (operator, term) in expression.others() {
             let value = self.evaluate_term(term);
 
             match operator {
-                ast::AdditiveOperator::Addition => result += value,
-                ast::AdditiveOperator::Subtraction => result -= value,
+                AdditiveOperator::Addition => result += value,
+                AdditiveOperator::Subtraction => result -= value,
             }
         }
 
@@ -182,15 +181,10 @@ impl<'a> Evaluator<'a> {
     }
 
     fn evaluate_term(&self, term: &Term) -> i16 {
-        let factors = term.factors();
-        let operators = term.operators();
+        let factor = term.factor();
+        let mut result = self.evaluate_factor(factor);
 
-        let mut result = self.evaluate_factor(&factors[0]);
-
-        for i in 1..factors.len() {
-            let operator = &operators[i - 1];
-            let factor = &factors[i];
-
+        for (operator, factor) in term.operations() {
             let value = self.evaluate_factor(factor);
 
             match operator {

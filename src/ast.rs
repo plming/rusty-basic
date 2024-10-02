@@ -83,55 +83,36 @@ impl fmt::Display for Factor {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Term {
-    factors: Vec<Factor>,
-    operators: Vec<MultiplicativeOperator>,
+    factor: Factor,
+    operations: Vec<(MultiplicativeOperator, Factor)>,
 }
 
 impl Term {
-    pub fn new(factor: Factor) -> Self {
+    pub fn new(factor: Factor, next: Vec<(MultiplicativeOperator, Factor)>) -> Self {
         Self {
-            factors: vec![factor],
-            operators: Vec::new(),
+            factor,
+            operations: next,
         }
     }
 
-    pub fn multiply_by(&mut self, factor: Factor) {
-        self.push_factor(MultiplicativeOperator::Multiplication, factor);
+    pub fn factor(&self) -> &Factor {
+        &self.factor
     }
 
-    pub fn divide_by(&mut self, factor: Factor) {
-        self.push_factor(MultiplicativeOperator::Division, factor);
-    }
-
-    pub fn factors(&self) -> &[Factor] {
-        &self.factors
-    }
-
-    pub fn operators(&self) -> &[MultiplicativeOperator] {
-        &self.operators
-    }
-
-    fn push_factor(&mut self, operator: MultiplicativeOperator, factor: Factor) {
-        self.factors.push(factor);
-        self.operators.push(operator);
-
-        debug_assert!(self.factors.len() == self.operators.len() + 1);
+    pub fn operations(&self) -> &[(MultiplicativeOperator, Factor)] {
+        &self.operations
     }
 }
 
 impl fmt::Display for Term {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut result = String::new();
+        write!(f, "{}", self.factor)?;
 
-        for i in 0..self.factors.len() {
-            if i > 0 {
-                result.push_str(&format!("{}", self.operators[i - 1]));
-            }
-
-            result.push_str(&format!("{}", self.factors[i]));
+        for operation in &self.operations {
+            write!(f, " {} {}", operation.0, operation.1)?;
         }
 
-        write!(f, "{}", result)
+        Ok(())
     }
 }
 
@@ -152,64 +133,50 @@ impl fmt::Display for MultiplicativeOperator {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Expression {
-    terms: Vec<Term>,
-    operators: Vec<AdditiveOperator>,
+    unary_operator: Option<AdditiveOperator>,
+    term: Term,
+    others: Vec<(AdditiveOperator, Term)>,
 }
 
 impl Expression {
-    pub fn new(unary_operator: Option<AdditiveOperator>, term: Term) -> Self {
-        let mut expression = Self {
-            terms: vec![term],
-            operators: Vec::new(),
-        };
-
-        if let Some(operator) = unary_operator {
-            expression.operators.push(operator);
-        } else {
-            // No operator, so we assume it's a positive number
-            expression.operators.push(AdditiveOperator::Addition);
+    pub fn new(
+        unary_operator: Option<AdditiveOperator>,
+        term: Term,
+        others: Vec<(AdditiveOperator, Term)>,
+    ) -> Self {
+        Self {
+            unary_operator,
+            term,
+            others,
         }
-
-        expression
     }
 
-    pub fn add(&mut self, term: Term) {
-        self.push_term(AdditiveOperator::Addition, term);
+    pub fn unary_operator(&self) -> &Option<AdditiveOperator> {
+        &self.unary_operator
     }
 
-    pub fn subtract(&mut self, term: Term) {
-        self.push_term(AdditiveOperator::Subtraction, term);
+    pub fn term(&self) -> &Term {
+        &self.term
     }
 
-    pub fn terms(&self) -> &[Term] {
-        &self.terms
-    }
-
-    pub fn operators(&self) -> &[AdditiveOperator] {
-        &self.operators
-    }
-
-    fn push_term(&mut self, operator: AdditiveOperator, term: Term) {
-        self.terms.push(term);
-        self.operators.push(operator);
-
-        debug_assert!(self.terms.len() == self.operators.len());
+    pub fn others(&self) -> &[(AdditiveOperator, Term)] {
+        &self.others
     }
 }
 
 impl fmt::Display for Expression {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut result = String::new();
-
-        for i in 0..self.terms.len() {
-            if i > 0 {
-                result.push_str(&format!("{}", self.operators[i - 1]));
-            }
-
-            result.push_str(&format!("{}", self.terms[i]));
+        if let Some(operator) = &self.unary_operator {
+            write!(f, "{}", operator)?;
         }
 
-        write!(f, "{}", result)
+        write!(f, "{}", self.term)?;
+
+        for (operator, term) in &self.others {
+            write!(f, " {} {}", operator, term)?;
+        }
+
+        Ok(())
     }
 }
 
