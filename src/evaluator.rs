@@ -1,8 +1,8 @@
 use std::io::Write;
 
 use crate::ast::{
-    AdditiveOperator, Expression, Factor, Line, MultiplicativeOperator, RelationalOperator,
-    Statement, Term,
+    AdditiveOperator, Expression, ExpressionListElement, Factor, Line, MultiplicativeOperator,
+    RelationalOperator, Statement, Term,
 };
 
 const STORAGE_SIZE: usize = 256;
@@ -63,9 +63,23 @@ impl<'a> Evaluator<'a> {
     fn run_direct(&mut self, statement: &Statement) -> Result<(), Error> {
         match statement {
             Statement::Print { expression_list } => {
-                expression_list.iter().for_each(|element| {
-                    writeln!(self.output, "{element}").unwrap();
-                });
+                for element in expression_list {
+                    match element {
+                        ExpressionListElement::Expression(expression) => {
+                            let value = self.evaluate_expression(expression);
+                            write!(self.output, "{} ", value).unwrap();
+                        }
+                        ExpressionListElement::StringLiteral(string_literal) => {
+                            write!(
+                                self.output,
+                                "{} ",
+                                String::from_utf8_lossy(string_literal.value())
+                            )
+                            .unwrap();
+                        }
+                    }
+                }
+                writeln!(self.output).unwrap();
             }
             Statement::If {
                 left,
