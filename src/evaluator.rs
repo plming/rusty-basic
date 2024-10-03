@@ -1,7 +1,9 @@
 use std::io::Write;
 
-use crate::ast::{self, AdditiveOperator};
-use crate::ast::{Expression, Factor, Line, Statement, Term};
+use crate::ast::{
+    AdditiveOperator, Expression, Factor, Line, MultiplicativeOperator, RelationalOperator,
+    Statement, Term,
+};
 
 const STORAGE_SIZE: usize = 256;
 const NUM_VARIABLES: usize = 26;
@@ -75,12 +77,12 @@ impl<'a> Evaluator<'a> {
                 let right_value = self.evaluate_expression(right);
 
                 let condition = match operator {
-                    ast::RelationalOperator::LessThan => left_value < right_value,
-                    ast::RelationalOperator::LessThanOrEqual => left_value <= right_value,
-                    ast::RelationalOperator::GreaterThan => left_value > right_value,
-                    ast::RelationalOperator::GreaterThanOrEqual => left_value >= right_value,
-                    ast::RelationalOperator::Equal => left_value == right_value,
-                    ast::RelationalOperator::NotEqual => left_value != right_value,
+                    RelationalOperator::LessThan => left_value < right_value,
+                    RelationalOperator::LessThanOrEqual => left_value <= right_value,
+                    RelationalOperator::GreaterThan => left_value > right_value,
+                    RelationalOperator::GreaterThanOrEqual => left_value >= right_value,
+                    RelationalOperator::Equal => left_value == right_value,
+                    RelationalOperator::NotEqual => left_value != right_value,
                 };
 
                 if condition {
@@ -188,8 +190,8 @@ impl<'a> Evaluator<'a> {
             let value = self.evaluate_factor(factor);
 
             match operator {
-                ast::MultiplicativeOperator::Multiplication => result *= value,
-                ast::MultiplicativeOperator::Division => result /= value,
+                MultiplicativeOperator::Multiplication => result *= value,
+                MultiplicativeOperator::Division => result /= value,
             }
         }
 
