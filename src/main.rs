@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         // Print a prompt
         let command = editor.readline("> ")?;
-        editor.add_history_entry(command.as_str())?;
+        editor.add_history_entry(&command)?;
 
         let tokens = match lex(command.as_bytes()) {
             Ok(tokens) => tokens,
