@@ -1,17 +1,10 @@
-mod ast;
-mod evaluator;
-mod lexer;
-mod parser;
-mod token;
-
-use std::error::Error;
-
-use evaluator::Evaluator;
-use lexer::Lexer;
-use parser::Parser;
 use rustyline::DefaultEditor;
 
-fn main() -> Result<(), Box<dyn Error>> {
+use rusty_basic::evaluator::Evaluator;
+use rusty_basic::lexer::Lexer;
+use rusty_basic::parser::Parser;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut stdout = std::io::stdout();
     let mut evaluator = Evaluator::new(&mut stdout);
     let mut editor = DefaultEditor::new()?;
