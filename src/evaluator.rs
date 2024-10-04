@@ -15,7 +15,7 @@ pub enum Error {
 }
 
 pub struct Evaluator<'a> {
-    storage: Vec<Option<Line>>,
+    storage: [Option<Line>; STORAGE_SIZE],
     stack: Vec<usize>,
     program_counter: usize,
     variables: [i16; NUM_VARIABLES],
@@ -25,7 +25,7 @@ pub struct Evaluator<'a> {
 impl<'a> Evaluator<'a> {
     pub fn new(output: &'a mut dyn Write) -> Self {
         Self {
-            storage: vec![None; STORAGE_SIZE],
+            storage: [const { None }; STORAGE_SIZE],
             stack: Vec::new(),
             program_counter: 0,
             variables: [0; NUM_VARIABLES],
@@ -131,7 +131,7 @@ impl<'a> Evaluator<'a> {
                 }
             },
             Statement::Clear => {
-                self.storage = vec![None; STORAGE_SIZE];
+                self.storage = [const { None }; STORAGE_SIZE];
             }
             Statement::List => {
                 self.storage.iter().for_each(|line| {
