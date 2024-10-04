@@ -4,28 +4,24 @@ mod lexer;
 mod parser;
 mod token;
 
-use std::io::Write;
+use std::error::Error;
 
 use evaluator::Evaluator;
 use lexer::Lexer;
 use parser::Parser;
+use rustyline::DefaultEditor;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut stdout = std::io::stdout();
-    let mut buffer = String::new();
     let mut evaluator = Evaluator::new(&mut stdout);
+    let mut editor = DefaultEditor::new()?;
 
     loop {
         // Print a prompt
-        print!("> ");
-        std::io::stdout().flush().unwrap();
+        let command = editor.readline("> ")?;
+        editor.add_history_entry(command.as_str())?;
 
-        // Read a line from the user
-        buffer.clear();
-        std::io::stdin().read_line(&mut buffer).unwrap();
-
-        let code = buffer.as_bytes();
-        let mut lexer = Lexer::new(code);
+        let mut lexer = Lexer::new(command.as_bytes());
         let tokens = match lexer.lex() {
             Ok(tokens) => tokens,
             Err(error) => {
@@ -44,12 +40,9 @@ fn main() {
         };
 
         let result = evaluator.process_line(line);
-        match result {
-            Ok(()) => {}
-            Err(error) => {
-                eprintln!("Runtime error: {error:?}");
-                continue;
-            }
-        };
+        if let Err(error) = result {
+            eprintln!("Runtime error: {error:?}");
+            continue;
+        }
     }
 }

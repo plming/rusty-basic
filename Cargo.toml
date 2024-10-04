@@ -3,3 +3,6 @@ name = "rusty-basic"
 version = "0.1.0"
 edition = "2021"
 repository = "https://github.com/plming/rusty-basic"
+
+[dependencies]
+rustyline = "14.0.0"
