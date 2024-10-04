@@ -1,7 +1,9 @@
+use std::collections::VecDeque;
+
 use rustyline::DefaultEditor;
 
 use rusty_basic::evaluator::Evaluator;
-use rusty_basic::lexer::Lexer;
+use rusty_basic::lexer::lex;
 use rusty_basic::parser::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,8 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let command = editor.readline("> ")?;
         editor.add_history_entry(command.as_str())?;
 
-        let mut lexer = Lexer::new(command.as_bytes());
-        let tokens = match lexer.lex() {
+        let tokens = match lex(command.as_bytes()) {
             Ok(tokens) => tokens,
             Err(error) => {
                 eprintln!("Lexer error: {error:?}");
@@ -23,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
 
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(VecDeque::from(tokens));
         let line = match parser.parse_line() {
             Ok(line) => line,
             Err(error) => {
