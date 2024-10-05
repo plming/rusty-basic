@@ -59,7 +59,7 @@ pub fn lex(code: &[u8]) -> Result<Vec<Token>, Error> {
             b'"' => {
                 let mut value = Vec::new();
                 let mut is_string_terminated = false;
-                while let Some(&ch) = chars.next() {
+                for &ch in &mut chars {
                     if ch == b'"' {
                         is_string_terminated = true;
                         break;
