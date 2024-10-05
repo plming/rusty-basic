@@ -14,3 +14,6 @@ Hello, Rust!
 - [Recursive descent parser](https://en.wikipedia.org/wiki/Recursive_descent_parser)
 - [Abstract syntax tree](https://en.wikipedia.org/wiki/Abstract_syntax_tree)
 - [The Rust Programming Language](https://doc.rust-kr.org)
+- [Rust by Example](https://doc.rust-lang.org/rust-by-example/)
+- [2023-MatKor-Rust-Interpreter](https://github.com/utilForever/2023-MatKor-Rust-Interpreter.git)
+- [Let's make a Teeny Tiny compiler](https://austinhenley.com/blog/teenytinycompiler1.html)
