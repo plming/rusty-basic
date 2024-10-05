@@ -48,7 +48,7 @@ pub fn lex(code: &[u8]) -> Result<Vec<Token>, Error> {
             b'/' => Token::Divide,
             b'0'..=b'9' => {
                 let mut value: i16 = (ch - b'0') as i16;
-                while let Some(&ch @ b'0'..b'9') = chars.peek() {
+                while let Some(&ch @ b'0'..=b'9') = chars.peek() {
                     value *= 10;
                     value += (ch - b'0') as i16;
                     chars.next();
@@ -250,6 +250,16 @@ mod tests {
             Token::Comma,
             Token::StringLiteral { value: Vec::new() },
         ];
+
+        let actual = lex(code);
+
+        assert_eq!(Ok(expected), actual);
+    }
+
+    #[test]
+    fn lex_number_with_boundary_digit_returns_tokens() {
+        let code = b"9999";
+        let expected = vec![Token::NumberLiteral(9999)];
 
         let actual = lex(code);
 
