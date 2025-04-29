@@ -2,9 +2,15 @@ use std::collections::VecDeque;
 
 use rustyline::DefaultEditor;
 
-use rusty_basic::evaluator::Evaluator;
-use rusty_basic::lexer::lex;
-use rusty_basic::parser::Parser;
+use evaluator::Evaluator;
+use lexer::lex;
+use parser::Parser;
+
+mod ast;
+mod evaluator;
+mod lexer;
+mod parser;
+mod token;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut stdout = std::io::stdout();
