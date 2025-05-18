@@ -1,10 +1,8 @@
-use std::collections::VecDeque;
-
-use rustyline::DefaultEditor;
-
 use evaluator::Evaluator;
 use lexer::lex;
 use parser::Parser;
+use std::collections::VecDeque;
+use std::io::{stdin, stdout, Write};
 
 mod ast;
 mod evaluator;
@@ -13,16 +11,21 @@ mod parser;
 mod token;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut stdout = std::io::stdout();
-    let mut evaluator = Evaluator::new(&mut stdout);
-    let mut editor = DefaultEditor::new()?;
+    let mut evaluator = Evaluator::new();
+
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    println!("RustyBASIC - TinyBASIC written in Rust.");
+    println!("Ver {VERSION}");
+    println!("Type 'end' to quit program.");
 
     loop {
         // Print a prompt
-        let command = editor.readline("> ")?;
-        editor.add_history_entry(&command)?;
+        print!("> ");
+        stdout().flush()?;
 
-        let tokens = match lex(command.as_bytes()) {
+        let mut buffer = String::new();
+        stdin().read_line(&mut buffer)?;
+        let tokens = match lex(buffer.as_bytes()) {
             Ok(tokens) => tokens,
             Err(error) => {
                 eprintln!("Lexer error: {error:?}");

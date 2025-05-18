@@ -1,6 +1,6 @@
 [package]
 name = "rusty-basic"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Hyeonseok Kim <kim010322@gmail.com>"]
 edition = "2021"
 rust-version = "1.81.0"
@@ -9,6 +9,3 @@ repository = "https://github.com/plming/rusty-basic"
 license = "MIT"
 keywords = ["tinybasic", "compiler", "interpreter"]
 categories = ["compilers", "command-line-utilities"]
-
-[dependencies]
-rustyline = "14.0.0"

@@ -1,9 +1,9 @@
-use std::io::Write;
-
 use crate::ast::{
     AdditiveOperator, Expression, ExpressionListElement, Factor, Line, MultiplicativeOperator,
     RelationalOperator, Statement, Term,
 };
+use std::io::stdin;
+use std::process::exit;
 
 const STORAGE_SIZE: usize = 256;
 const NUM_VARIABLES: usize = 26;
@@ -12,24 +12,24 @@ const NUM_VARIABLES: usize = 26;
 pub enum Error {
     LineNumberOutOfRange,
     UnknownLineNumber,
+    WrongUserInput,
+    CannotParseNumber,
 }
 
-pub struct Evaluator<'a> {
+pub struct Evaluator {
     storage: [Option<Line>; STORAGE_SIZE],
     stack: Vec<usize>,
     program_counter: usize,
     variables: [i16; NUM_VARIABLES],
-    output: &'a mut dyn Write,
 }
 
-impl<'a> Evaluator<'a> {
-    pub fn new(output: &'a mut dyn Write) -> Self {
+impl Evaluator {
+    pub fn new() -> Self {
         Self {
             storage: [const { None }; STORAGE_SIZE],
             stack: Vec::new(),
             program_counter: 0,
             variables: [0; NUM_VARIABLES],
-            output,
         }
     }
 
@@ -67,19 +67,15 @@ impl<'a> Evaluator<'a> {
                     match element {
                         ExpressionListElement::Expression(expression) => {
                             let value = self.evaluate_expression(expression);
-                            write!(self.output, "{} ", value).unwrap();
+                            print!("{value} ");
                         }
                         ExpressionListElement::StringLiteral(string_literal) => {
-                            write!(
-                                self.output,
-                                "{} ",
-                                String::from_utf8_lossy(string_literal.value())
-                            )
-                            .unwrap();
+                            let literal = String::from_utf8_lossy(string_literal.value());
+                            print!("{literal} ",);
                         }
                     }
                 }
-                writeln!(self.output).unwrap();
+                println!();
             }
             Statement::If {
                 left,
@@ -108,8 +104,23 @@ impl<'a> Evaluator<'a> {
 
                 self.jump(line_number)?;
             }
-            Statement::Input { variable_list: _ } => {
-                todo!("implement input statement");
+            Statement::Input { variable_list } => {
+                let mut buffer = String::new();
+                stdin().read_line(&mut buffer).unwrap();
+
+                let mut nums = Vec::new();
+                for num in buffer.trim().split(" ") {
+                    let num = num.parse::<i16>().map_err(|_| Error::CannotParseNumber)?;
+                    nums.push(num);
+                }
+
+                if nums.len() != variable_list.len() {
+                    Err(Error::WrongUserInput)?;
+                }
+
+                for i in 0..nums.len() {
+                    self.store_variable(variable_list[i].identifier(), nums[i]);
+                }
             }
             Statement::Let {
                 variable,
@@ -136,7 +147,7 @@ impl<'a> Evaluator<'a> {
             Statement::List => {
                 self.storage.iter().for_each(|line| {
                     if let Some(line) = line {
-                        writeln!(self.output, "{}", line).unwrap();
+                        println!("{line}");
                     }
                 });
             }
@@ -145,7 +156,7 @@ impl<'a> Evaluator<'a> {
                 self.run_indirect()?;
             }
             Statement::End => {
-                self.program_counter = self.storage.len();
+                exit(0);
             }
         }
 
