@@ -1,9 +1,10 @@
+use std::io::stdin;
+use std::process::exit;
+
 use crate::ast::{
     AdditiveOperator, Expression, ExpressionListElement, Factor, Line, MultiplicativeOperator,
     RelationalOperator, Statement, Term,
 };
-use std::io::stdin;
-use std::process::exit;
 
 const STORAGE_SIZE: usize = 256;
 const NUM_VARIABLES: usize = 26;

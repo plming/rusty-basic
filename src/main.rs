@@ -1,30 +1,30 @@
-use evaluator::Evaluator;
-use lexer::lex;
-use parser::Parser;
-use std::collections::VecDeque;
-use std::io::{stdin, stdout, Write};
-
 mod ast;
 mod evaluator;
 mod lexer;
 mod parser;
 mod token;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+use std::collections::VecDeque;
+use std::io::{stdin, stdout, Write};
+
+use evaluator::Evaluator;
+use lexer::lex;
+use parser::Parser;
+
+fn main() {
     let mut evaluator = Evaluator::new();
 
-    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
     println!("RustyBASIC - TinyBASIC written in Rust.");
     println!("Ver {VERSION}");
     println!("Type 'end' to quit program.");
 
     loop {
-        // Print a prompt
         print!("> ");
-        stdout().flush()?;
+        stdout().flush().unwrap();
 
         let mut buffer = String::new();
-        stdin().read_line(&mut buffer)?;
+        stdin().read_line(&mut buffer).unwrap();
         let tokens = match lex(buffer.as_bytes()) {
             Ok(tokens) => tokens,
             Err(error) => {
