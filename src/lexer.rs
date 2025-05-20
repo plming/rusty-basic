@@ -6,7 +6,7 @@ pub enum Error {
     InvalidCharacter,
     /// Lexed identifier is not keyword or variable
     UnknownIdentifier,
-    /// Non terminated string literal like `"Hello, World!"`
+    /// Non terminated string literal like `"Hello, World!`
     NonTerminatedStringLiteral,
 }
 
