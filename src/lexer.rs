@@ -2,11 +2,11 @@ use crate::token::Token;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
-    /// Found an invalid character like b'@', b'$'
+    /// Found an invalid character like `b'@'`, `b'$'`
     InvalidCharacter,
     /// Lexed identifier is not keyword or variable
     UnknownIdentifier,
-    /// Non terminated string literal like "Hello, World!
+    /// Non terminated string literal like `"Hello, World!"`
     NonTerminatedStringLiteral,
 }
 
